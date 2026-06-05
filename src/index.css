@@ -1,7 +1,66 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bellota+Text:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
-/*@config "../tailwind.config.cjs";*/
 @import 'tailwindcss';
 @import "@adech/themes/superior/tailwind";
+
+:root[data-theme="dark"] {
+  /* Global */
+  --adech-bg: var(--color-adech-swamp-1);
+  --adech-fg: var(--color-adech-boulevard-1);
+  --adech-title: var(--color-adech-boulevard-1);
+  --adech-paragraph: var(--color-adech-boulevard-4);
+  --adech-muted: var(--color-adech-void-1);
+  --adech-surface: var(--color-adech-swamp-2);
+  --adech-surface-strong: var(--color-adech-swamp-3);
+  --adech-surface-muted: var(--color-adech-swamp-1);
+  --adech-border: var(--color-adech-void-3);
+
+  /* Header */
+  --adech-nav-bg: var(--color-adech-swamp-3);
+  --adech-nav-fg: var(--color-adech-boulevard-4);
+  --adech-nav-bg-active: var(--color-adech-boulevard-4);
+  --adech-nav-fg-active: var(--color-adech-swamp-3);
+
+  /* Hero */
+  --adech-hero-subtitle: var(--color-adech-venomous-4);
+  --adech-hero-paragraph: var(--color-adech-boulevard-2);
+  --adech-hero-bg-button: var(--color-adech-venomous-1);
+  --adech-hero-fg-button: var(--color-adech-swamp-1);
+
+  /* Footer */
+  --adech-footer-bg: var(--color-adech-swamp-3);
+  --adech-footer-fg: var(--color-adech-boulevard-1);
+  --adech-footer-paragraph: var(--color-adech-boulevard-3);
+}
+
+:root[data-theme="light"] {
+  /* Global */
+  --adech-bg: var(--color-adech-boulevard-2);
+  --adech-fg: var(--color-adech-swamp-1);
+  --adech-title: var(--color-adech-swamp-1);
+  --adech-paragraph: var(--color-adech-void-3);
+  --adech-muted: var(--color-adech-void-2);
+  --adech-surface: var(--color-adech-boulevard-1);
+  --adech-surface-strong: var(--color-adech-boulevard-2);
+  --adech-surface-muted: var(--color-adech-boulevard-4);
+  --adech-border: var(--color-adech-void-1);
+
+  /* Header */
+  --adech-nav-bg: var(--color-adech-boulevard-1);
+  --adech-nav-fg: var(--color-adech-swamp-1);
+  --adech-nav-bg-active: var(--color-adech-swamp-1);
+  --adech-nav-fg-active: var(--color-adech-venomous-3);
+
+  /* Hero */
+  --adech-hero-subtitle: var(--color-adech-swamp-2);
+  --adech-hero-paragraph: var(--color-adech-void-3);
+  --adech-hero-bg-button: var(--color-adech-boulevard-4);
+  --adech-hero-fg-button: var(--color-adech-swamp-1);
+
+  /* Footer */
+  --adech-footer-bg: var(--color-adech-boulevard-4);
+  --adech-footer-fg: var(--color-adech-swamp-1);
+  --adech-footer-paragraph: var(--color-adech-swamp-2);
+}
 
 .font-bebas {
   font-family: "Bebas Neue", sans-serif;

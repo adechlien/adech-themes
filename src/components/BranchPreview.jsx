@@ -156,7 +156,7 @@ function SwatchCard({ token, hex, isFirst, isLast }) {
   );
 }
 
-export default function BranchesSection() {
+export default function BranchesSection({ onExploreBranches }) {
   const palettes = useMemo(() => {
     const families = superior?.subbranches || {};
 
@@ -180,38 +180,31 @@ export default function BranchesSection() {
     });
   }, []);
 
+  const previewPalettes = palettes.slice(0, 3);
+
   return (
     <section id="branches" className="scroll-mt-24">
       <div className="flex flex-wrap items-end justify-between gap-6">
-        <div className=" space-y-3">
+        <div className="space-y-3">
           <h2 className="font-bebas text-5xl">Superior</h2>
 
-          <p className="text-sm text-adech-boulevard-4">
-            <span className="font-semibold">Superior</span> is the main theme in
-            Adech Themes. just like any branch in Adech, it is structured as made of smaller subbranches
-            (or palettes), each one grouping related colors with its own visual
-            character.
+          <p className="text-sm text-(--adech-paragraph) max-w-lg">
+            A quick look at the main branch: tokenized palettes that can move
+            across interfaces, editors, and workspace themes.
           </p>
-
-          {/* <p className="text-sm leading-relaxed text-adech-boulevard-4">
-            This branch reflects on the way our surroundings shape what we feel and
-            how we move through life. <span className="font-semibold">Boulevard</span>{" "}
-            represents the city: its scale, its cold beauty, and the loneliness we
-            can still feel even while being surrounded by people in a giant urban
-            space. <span className="font-semibold">Venomous</span> mixes the natural
-            and the ancient through its greens, while its purples introduce a sense
-            of magic, of the mysterious things we often label as inexplicable.{" "}
-            <span className="font-semibold">Swamp</span> represents calm. At the end
-            of the day, it is only ourselves left with our breath, our thoughts, and
-            the decision to keep going. As long as we still have ourselves, there is
-            no problem we cannot face.
-          </p>*/}
         </div>
 
+        <button
+          type="button"
+          onClick={onExploreBranches}
+          className="rounded-lg bg-(--adech-hero-bg-button) px-4 py-2 text-sm font-medium text-(--adech-hero-fg-button) cursor-pointer"
+        >
+          Explore branches
+        </button>
       </div>
 
       <div className="mt-10 flex flex-col gap-8">
-        {palettes.map((palette) => {
+        {previewPalettes.map((palette) => {
           const isRightAligned = palette.id === "venomous" || palette.id === "sunny";
           const isSwamp = palette.id === "swamp";
 
@@ -223,17 +216,17 @@ export default function BranchesSection() {
                   isRightAligned ? "items-end text-right" : "items-start text-left",
                 ].join(" ")}
               >
-                <h3 className="text-lg font-semibold text-adech-boulevard-1">
+                <h3 className="text-lg font-semibold text-(--adech-title)">
                   {palette.name}
                 </h3>
-                <p className="max-w-xl text-sm text-adech-boulevard-3">
+                <p className="max-w-xl text-sm text-(--adech-paragraph)">
                   {palette.description}
                 </p>
               </div>
 
               <div className={[
                 "overflow-hidden",
-                isSwamp ? "border border-adech-swamp-3 rounded-lg" : "",
+                isSwamp ? "border border-(--adech-border) rounded-lg" : "",
               ].join(" ")}>
                 <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr" style={{gridTemplateColumns: `repeat(${palette.colors.length}, minmax(0, 1fr))`,}}>
                   {palette.colors.map((color, index) => (
@@ -244,7 +237,9 @@ export default function BranchesSection() {
             </section>
           );
         })}
-        <p className="text-xs text-adech-void-1 text-right">Click any color to copy</p>
+        <p className="text-xs text-(--adech-muted) text-right">
+          Click any color to copy
+        </p>
 
       </div>
     </section>

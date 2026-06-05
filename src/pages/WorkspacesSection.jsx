@@ -42,12 +42,12 @@ function WorkspaceCard({ name, icon, version, actions }) {
   return (
     <>
       {actions.map((a) => (
-        <a key={a.href} href={a.href} className="flex items-center justify-between gap-6 rounded-lg bg-adech-swamp-3 p-6" target="_blank">
+        <a key={a.href} href={a.href} className="flex items-center justify-between gap-6 rounded-lg bg-(--adech-surface) p-6 ring-1 ring-(--adech-border)" target="_blank">
           <div className="flex flex-col items-startgap-2">
-            <h3 className="text-xl font-semibold text-adech-boulevard-1 truncate">
+            <h3 className="text-xl font-semibold text-(--adech-title) truncate">
               {name}
             </h3>
-            <span className="text-xs text-adech-boulevard-4">
+            <span className="text-xs text-(--adech-paragraph)">
               {version}
             </span>
           </div>
@@ -63,10 +63,10 @@ export default function WorkspacesSection() {
     <section id="workspaces" className="scroll-mt-24">
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
-          <h2 className="text-4xl text-adech-boulevard-1 font-bebas">
+          <h2 className="text-4xl text-(--adech-title) font-bebas">
             Workspaces
           </h2>
-          <p className="text-sm text-adech-boulevard-4 max-w-lg">
+          <p className="text-sm text-(--adech-paragraph) max-w-lg">
             Official ports for your workspaces.
           </p>
         </div>

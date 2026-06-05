@@ -1,409 +1,341 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  fetchColorName,
+  formatColor,
+  hexToRgb,
+  normalizeHex,
+  parseRgb,
+  randomHex,
+  readableText,
+  rgbToHex,
+} from "./colorUtils";
 
-function hexToRgb(hex) {
-  const c = hex.replace("#", "").trim();
-  if (c.length !== 6) return null;
+const LEVELS = [
+  { id: "practice", label: "10", attempts: 10 },
+  { id: "normal", label: "6", attempts: 6 },
+  { id: "hard", label: "3", attempts: 3 },
+  { id: "sudden", label: "1", attempts: 1 },
+];
 
-  const r = parseInt(c.slice(0, 2), 16);
-  const g = parseInt(c.slice(2, 4), 16);
-  const b = parseInt(c.slice(4, 6), 16);
+function scoreGuess(targetHex, guessHex) {
+  const target = hexToRgb(targetHex);
+  const guess = hexToRgb(guessHex);
+  if (!target || !guess) return null;
 
-  if ([r, g, b].some((n) => Number.isNaN(n))) return null;
-  return { r, g, b };
+  const channels = ["r", "g", "b"].map((channel) => {
+    const diff = Math.abs(target[channel] - guess[channel]);
+
+    return {
+      channel,
+      score: Math.max(0, Math.round(100 - diff / 2.55)),
+      direction:
+        guess[channel] === target[channel]
+          ? "exact"
+          : guess[channel] < target[channel]
+            ? "higher"
+            : "lower",
+    };
+  });
+
+  const distance = Math.sqrt(
+    (target.r - guess.r) ** 2 + (target.g - guess.g) ** 2 + (target.b - guess.b) ** 2
+  );
+  const score = Math.max(0, Math.round(100 - (distance / 441.67) * 100));
+
+  return { score, channels };
 }
 
-function readableText(hex) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return "#F3F4F6";
-
-  const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-  return brightness > 128 ? "#1F2937" : "#F9FAFB";
-}
-
-function generateHexCode() {
-  const hexDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
-  let hexCode = "#";
-
-  for (let i = 0; i < 6; i++) {
-    hexCode += hexDigits[Math.floor(Math.random() * hexDigits.length)];
+function parseGuess(format, hexValue, rgbValue) {
+  if (format === "rgb") {
+    const rgb = parseRgb(rgbValue);
+    return rgb ? rgbToHex(rgb) : null;
   }
 
-  return hexCode;
+  return normalizeHex(hexValue);
 }
 
-function createInitialState() {
-  return {
-    targetColor: generateHexCode(),
-    targetCodeVisible: "",
-    targetName: "",
-    guessInput: "",
-    guessColor: "",
-    guessName: "",
-    percentage: "?",
-    rgbStats: ["?", "?", "?"],
-    message: "Type the Hex code",
-  };
+function messageFor(score, won, done) {
+  if (won) return "Perfect match";
+  if (done) return "No attempts left";
+  if (score >= 95) return "Almost exact";
+  if (score >= 85) return "Very close";
+  if (score >= 70) return "Warm";
+  if (score >= 50) return "Getting there";
+  return "Keep searching";
 }
 
-function checkCodes(targetHex, guessHex) {
-  const target = targetHex.replace("#", "");
-  const guess = guessHex.replace("#", "");
-
-  let percentage = 0;
-  const rgbPercentages = [0, 0, 0];
-
-  for (let i = 0; i < 6; i += 2) {
-    const targetDigit = parseInt(target.slice(i, i + 2), 16);
-    const guessDigit = parseInt(guess.slice(i, i + 2), 16);
-    const difference = Math.abs(targetDigit - guessDigit);
-
-    rgbPercentages[i / 2] = Math.max(0, Math.round(100 - difference / 2.55));
-    percentage += 100 - difference / 2.55;
-  }
-
-  return {
-    percentage: (percentage / 3).toFixed(1).replace(/\.?0+$/, ""),
-    rgbPercentages: rgbPercentages.map(String),
-  };
-}
-
-function getMessage(percentage) {
-  const p = Number(percentage);
-
-  if (p === 100) return "Well done! You guessed the color!";
-  if (p >= 95) return "C'mon! Just fix some details!";
-  if (p >= 90) return "Almost there!";
-  if (p >= 80) return "You're close!";
-  if (p >= 70) return "Keep trying!";
-  if (p >= 60) return "You can do better!";
-  if (p >= 40) return "You're far!";
-  if (p >= 20) return "You're very far!";
-  return "I guessed colors are not your thing...";
-}
-
-async function fetchColorName(hex) {
-  try {
-    const clean = hex.replace("#", "");
-    const res = await fetch(`https://www.thecolorapi.com/id?hex=${clean}`);
-
-    if (!res.ok) throw new Error("Network error");
-
-    const data = await res.json();
-    return data?.name?.value || "";
-  } catch {
-    return "";
-  }
-}
-
-function StatBox({ value, tone = "text-white" }) {
+function ChannelHint({ item }) {
   return (
-    <div className="min-w-[64px] rounded-xl bg-[#09152A] px-4 py-3 text-center shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-      <span className={`text-2xl font-semibold tracking-tight ${tone}`}>
-        {value === "?" ? "?" : `${value}%`}
-      </span>
+    <div className="rounded-lg bg-(--adech-surface-strong) px-3 py-2 text-center ring-1 ring-(--adech-border)">
+      <p className="text-xs text-(--adech-muted)">{item.channel.toUpperCase()}</p>
+      <p className="mt-1 text-lg font-semibold text-(--adech-title)">
+        {item.score}%
+      </p>
+      <p className="text-xs text-(--adech-paragraph)">{item.direction}</p>
     </div>
   );
 }
 
-function GuessColorBoard({
-  targetColor,
-  targetCodeVisible,
-  targetName,
-  guessColor,
-  guessName,
-  guessInput,
-  percentage,
-  rgbStats,
-  message,
-  onInputChange,
-  onGuess,
-  onSeeCode,
-  onRetry,
-  onAnotherColor,
-  onZenMode,
-  showZenButton = true,
-  fullscreen = false,
-}) {
-  const targetTextColor = readableText(targetColor);
-  const guessBg = guessColor || "#7BC2BF";
-  const guessTextColor = readableText(guessBg);
+function CopyButton({ value, children }) {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 900);
+    } catch {
+      // noop
+    }
+  };
 
   return (
-    <div
-      className={[
-        "relative overflow-hidden ",
-        fullscreen ? "min-h-[100svh] rounded-none ring-0" : "h-full rounded-lg",
-      ].join(" ")}
+    <button
+      type="button"
+      onClick={onCopy}
+      className="rounded-lg bg-(--adech-nav-bg-active) px-3 py-2 text-sm font-medium text-(--adech-nav-fg-active)"
     >
-      <div className="grid min-h-inherit grid-cols-1 md:grid-cols-2">
-        <div
-          className="flex min-h-[260px] items-center justify-center px-8 py-14 text-center"
-          style={{ backgroundColor: targetColor, color: targetTextColor }}
-        >
-          <div>
-            <p className="text-[13px] opacity-80">Target</p>
-            <p className="mt-4 text-2xl font-medium tracking-tight md:text-3xl">
-              {targetCodeVisible || ""}
-            </p>
-            <p className="mt-3 text-2xl font-medium tracking-tight md:text-3xl">
-              {targetName || ""}
-            </p>
-          </div>
-        </div>
-
-        <div
-          className="flex min-h-[260px] items-center justify-center px-8 py-14 text-center"
-          style={{ backgroundColor: guessBg, color: guessTextColor }}
-        >
-          <div>
-            <p className="text-[13px] opacity-80">Your guess</p>
-            <p className="mt-4 text-2xl font-medium tracking-tight md:text-3xl">
-              {guessColor || ""}
-            </p>
-            <p className="mt-3 text-2xl font-medium tracking-tight md:text-3xl">
-              {guessName || ""}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-4">
-        <div className="pointer-events-auto w-full max-w-[320px] rounded-2xl bg-[#1A2550] px-4 py-5 text-center text-white shadow-[0_18px_60px_rgba(0,0,0,0.35)] md:max-w-[360px]">
-          <h3 className="text-[2rem] font-semibold leading-none tracking-tight">
-            {percentage === "?" ? "Guess it" : message}
-          </h3>
-
-          <p className="mt-4 text-lg text-white/70">
-            {guessInput ? `#${guessInput}` : "Type the Hex code"}
-          </p>
-
-          <div className="mt-5 flex items-center justify-center gap-3">
-            <StatBox value={rgbStats[0]} tone="text-[#E7A1A1]" />
-            <StatBox value={rgbStats[1]} tone="text-[#DCEFD9]" />
-            <StatBox value={rgbStats[2]} tone="text-[#DDE7FF]" />
-          </div>
-
-          <div className="mt-5">
-            <div className="flex items-center rounded-xl bg-[#09152A] px-3 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-              <span className="mr-2 text-lg text-white/60">#</span>
-              <input
-                value={guessInput}
-                onChange={onInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onGuess();
-                }}
-                maxLength={6}
-                placeholder="FF99FF"
-                className="w-full bg-transparent text-center text-lg uppercase tracking-[0.2em] text-white outline-none placeholder:text-white/25"
-              />
-            </div>
-          </div>
-
-          <div className="mt-5 grid grid-cols-3 gap-3">
-            <button
-              onClick={onAnotherColor}
-              className="rounded-xl bg-[#222E61] px-3 py-3 text-base font-medium text-white shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition hover:bg-[#2A3873]"
-              type="button"
-            >
-              Change
-            </button>
-
-            <button
-              onClick={onSeeCode}
-              className="rounded-xl bg-[#222E61] px-3 py-3 text-base font-medium text-white shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition hover:bg-[#2A3873]"
-              type="button"
-            >
-              See code
-            </button>
-
-            <button
-              onClick={onRetry}
-              className="rounded-xl bg-[#222E61] px-3 py-3 text-base font-medium text-white shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition hover:bg-[#2A3873]"
-              type="button"
-            >
-              Retry
-            </button>
-          </div>
-
-          <button
-            onClick={onGuess}
-            className="mt-3 w-full rounded-xl bg-core-3/20 px-4 py-3 text-base font-medium text-white ring-1 ring-core-3/25 transition hover:bg-core-3/25"
-            type="button"
-          >
-            Guess
-          </button>
-
-          {showZenButton && (
-            <button
-              onClick={onZenMode}
-              className="mt-3 w-full rounded-xl bg-white/8 px-4 py-3 text-sm font-medium text-white/90 ring-1 ring-white/10 transition hover:bg-white/12"
-              type="button"
-            >
-              Zen mode
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      {copied ? "Copied" : children}
+    </button>
   );
 }
 
 export default function GuessColor() {
-  const [game, setGame] = useState(createInitialState);
-  const [zenMode, setZenMode] = useState(false);
+  const [target, setTarget] = useState(() => randomHex());
+  const [targetName, setTargetName] = useState("");
+  const [format, setFormat] = useState("hex");
+  const [level, setLevel] = useState(LEVELS[1]);
+  const [hexInput, setHexInput] = useState("");
+  const [rgbInput, setRgbInput] = useState("");
+  const [attempts, setAttempts] = useState([]);
+  const [revealed, setRevealed] = useState(false);
+
+  const lastAttempt = attempts[0];
+  const won = lastAttempt?.guess === target;
+  const done = won || attempts.length >= level.attempts;
+  const attemptsLeft = Math.max(0, level.attempts - attempts.length);
+  const targetRgb = useMemo(() => formatColor(target, "rgb"), [target]);
+  const targetText = readableText(target);
+  const guessBg = lastAttempt?.guess || "var(--adech-surface-strong)";
+  const guessText = lastAttempt?.guess ? readableText(lastAttempt.guess) : "var(--adech-paragraph)";
 
   useEffect(() => {
-    if (!zenMode) return;
+    const controller = new AbortController();
 
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setZenMode(false);
-    };
+    fetchColorName(target, controller.signal).then(setTargetName);
 
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
+    return () => controller.abort();
+  }, [target]);
 
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [zenMode]);
-
-  const resetRound = () => {
-    setGame((prev) => ({
-      ...prev,
-      targetCodeVisible: "",
-      targetName: "",
-      guessInput: "",
-      guessColor: "",
-      guessName: "",
-      percentage: "?",
-      rgbStats: ["?", "?", "?"],
-      message: "Type the Hex code",
-    }));
+  const reset = (nextLevel = level) => {
+    setTarget(randomHex());
+    setTargetName("");
+    setHexInput("");
+    setRgbInput("");
+    setAttempts([]);
+    setRevealed(false);
+    setLevel(nextLevel);
   };
 
-  const generateNewColor = () => {
-    setGame({
-      targetColor: generateHexCode(),
-      targetCodeVisible: "",
-      targetName: "",
-      guessInput: "",
-      guessColor: "",
-      guessName: "",
-      percentage: "?",
-      rgbStats: ["?", "?", "?"],
-      message: "Type the Hex code",
-    });
-  };
+  const submit = async () => {
+    if (done) return;
 
-  const handleInputChange = (e) => {
-    const value = e.target.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
-    setGame((prev) => ({
-      ...prev,
-      guessInput: value,
-    }));
-  };
+    const guess = parseGuess(format, hexInput, rgbInput);
+    if (!guess) return;
 
-  const handleGuess = async () => {
-    let guess = game.guessInput.trim().replace("#", "").toUpperCase();
+    const result = scoreGuess(target, guess);
+    if (!result) return;
 
-    if (guess.length === 3) {
-      guess = `${guess[0]}${guess[0]}${guess[1]}${guess[1]}${guess[2]}${guess[2]}`;
-    }
+    const name = await fetchColorName(guess);
+    const nextDone = guess === target || attempts.length + 1 >= level.attempts;
 
-    if (guess.length !== 6) return;
-
-    const hexGuess = `#${guess}`;
-    const result = checkCodes(game.targetColor, hexGuess);
-
-    setGame((prev) => ({
-      ...prev,
-      guessColor: hexGuess,
-      percentage: result.percentage,
-      rgbStats: result.rgbPercentages,
-      message: getMessage(result.percentage),
-      guessInput: "",
-    }));
-
-    const name = await fetchColorName(hexGuess);
-
-    setGame((prev) => ({
-      ...prev,
-      guessName: name,
-    }));
-  };
-
-  const handleSeeCode = async () => {
-    const color = game.targetColor;
-
-    setGame((prev) => ({
-      ...prev,
-      targetCodeVisible: color,
-    }));
-
-    const name = await fetchColorName(color);
-
-    setGame((prev) => ({
-      ...prev,
-      targetName: name,
-    }));
+    setAttempts((current) => [
+      {
+        guess,
+        name,
+        rgb: formatColor(guess, "rgb"),
+        score: result.score,
+        channels: result.channels,
+        message: messageFor(result.score, guess === target, nextDone),
+      },
+      ...current,
+    ]);
+    setHexInput("");
+    setRgbInput("");
   };
 
   return (
-    <>
-      <div className="rounded-3xl h-full">
-        <GuessColorBoard
-          targetColor={game.targetColor}
-          targetCodeVisible={game.targetCodeVisible}
-          targetName={game.targetName}
-          guessColor={game.guessColor}
-          guessName={game.guessName}
-          guessInput={game.guessInput}
-          percentage={game.percentage}
-          rgbStats={game.rgbStats}
-          message={game.message}
-          onInputChange={handleInputChange}
-          onGuess={handleGuess}
-          onSeeCode={handleSeeCode}
-          onRetry={resetRound}
-          onAnotherColor={generateNewColor}
-          onZenMode={() => setZenMode(true)}
-          showZenButton
-        />
+    <div className="relative min-h-[620px] overflow-hidden rounded-xl ring-1 ring-(--adech-border)">
+      <div className="absolute inset-0 grid grid-cols-1 md:grid-cols-2">
+        <div
+          className="flex items-center justify-center p-8 text-center"
+          style={{ backgroundColor: target, color: targetText }}
+        >
+          <div className="max-w-xs">
+            <p className="text-xs opacity-80">Target</p>
+            <p className="mt-3 text-3xl font-semibold">
+              {revealed || won || done ? target : "Hidden"}
+            </p>
+            <p className="mt-2 text-sm opacity-85">
+              {revealed || won || done ? targetRgb : "Guess the color code"}
+            </p>
+            <p className="mt-2 text-lg font-semibold">
+              {revealed || won || done ? targetName : ""}
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="flex items-center justify-center p-8 text-center"
+          style={{ background: guessBg, color: guessText }}
+        >
+          <div className="max-w-xs">
+            <p className="text-xs opacity-80">Last guess</p>
+            <p className="mt-3 text-3xl font-semibold">
+              {lastAttempt?.guess || "No guess"}
+            </p>
+            <p className="mt-2 text-sm opacity-85">
+              {lastAttempt?.rgb || "Submit a HEX or RGB value"}
+            </p>
+            <p className="mt-2 text-lg font-semibold">
+              {lastAttempt?.name || ""}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {zenMode && (
-        <div className="fixed inset-0 z-[999] bg-black/75 backdrop-blur-md">
-          <button
-            onClick={() => setZenMode(false)}
-            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/15 transition hover:bg-white/15 md:right-6 md:top-6"
-            type="button"
-            aria-label="Close zen mode"
-          >
-            ✕
-          </button>
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+        <div className="pointer-events-auto w-full max-w-[420px] rounded-xl bg-(--adech-surface) p-4 text-center shadow-[0_18px_60px_rgba(0,0,0,0.25)] ring-1 ring-(--adech-border)">
+          <p className="text-2xl font-semibold text-(--adech-title)">
+            {lastAttempt ? lastAttempt.message : "Guess it"}
+          </p>
+          <p className="mt-1 text-sm text-(--adech-paragraph)">
+            {attemptsLeft} attempts left
+          </p>
 
-          <GuessColorBoard
-            targetColor={game.targetColor}
-            targetCodeVisible={game.targetCodeVisible}
-            targetName={game.targetName}
-            guessColor={game.guessColor}
-            guessName={game.guessName}
-            guessInput={game.guessInput}
-            percentage={game.percentage}
-            rgbStats={game.rgbStats}
-            message={game.message}
-            onInputChange={handleInputChange}
-            onGuess={handleGuess}
-            onSeeCode={handleSeeCode}
-            onRetry={resetRound}
-            onAnotherColor={generateNewColor}
-            onZenMode={() => setZenMode(false)}
-            showZenButton={false}
-            fullscreen
-          />
+          <div className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-(--adech-nav-bg) p-1 text-(--adech-nav-fg)">
+            {LEVELS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => reset(item)}
+                className={[
+                  "rounded-lg px-2 py-1 text-sm transition",
+                  level.id === item.id
+                    ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)"
+                    : "",
+                ].join(" ")}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 inline-flex rounded-lg bg-(--adech-nav-bg) p-1 text-(--adech-nav-fg)">
+            {["hex", "rgb"].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setFormat(item)}
+                className={[
+                  "rounded-lg px-3 py-1 text-sm uppercase transition",
+                  format === item
+                    ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)"
+                    : "",
+                ].join(" ")}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {format === "hex" ? (
+            <input
+              value={hexInput}
+              onChange={(event) =>
+                setHexInput(event.target.value.replace(/[^0-9a-fA-F#]/g, "").toUpperCase())
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submit();
+              }}
+              placeholder="#A1C4FF"
+              className="mt-4 h-11 w-full rounded-lg bg-(--adech-surface-strong) px-3 text-center text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
+            />
+          ) : (
+            <input
+              value={rgbInput}
+              onChange={(event) => setRgbInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submit();
+              }}
+              placeholder="161, 196, 255"
+              className="mt-4 h-11 w-full rounded-lg bg-(--adech-surface-strong) px-3 text-center text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
+            />
+          )}
+
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={done}
+              className="rounded-lg bg-(--adech-nav-bg-active) px-3 py-2 text-sm font-medium text-(--adech-nav-fg-active) disabled:opacity-50"
+            >
+              Guess
+            </button>
+            <button
+              type="button"
+              onClick={() => setRevealed(true)}
+              className="rounded-lg bg-(--adech-surface-strong) px-3 py-2 text-sm font-medium text-(--adech-title) ring-1 ring-(--adech-border)"
+            >
+              Reveal
+            </button>
+            <button
+              type="button"
+              onClick={() => reset()}
+              className="rounded-lg bg-(--adech-surface-strong) px-3 py-2 text-sm font-medium text-(--adech-title) ring-1 ring-(--adech-border)"
+            >
+              New
+            </button>
+          </div>
+
+          {lastAttempt ? (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {lastAttempt.channels.map((item) => (
+                <ChannelHint key={item.channel} item={item} />
+              ))}
+            </div>
+          ) : null}
+
+          {(revealed || won || done) && (
+            <div className="mt-4 flex justify-center gap-2">
+              <CopyButton value={target}>Copy HEX</CopyButton>
+              <CopyButton value={targetRgb}>Copy RGB</CopyButton>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {attempts.length > 0 && (
+        <div className="absolute bottom-3 left-3 right-3 z-10 flex gap-2 overflow-x-auto">
+          {attempts.map((attempt, index) => (
+            <div
+              key={`${attempt.guess}-${index}`}
+              className="flex min-w-48 items-center gap-2 rounded-lg bg-(--adech-surface) p-2 ring-1 ring-(--adech-border)"
+            >
+              <span
+                className="h-8 w-8 rounded-md ring-1 ring-(--adech-border)"
+                style={{ backgroundColor: attempt.guess }}
+              />
+              <div className="min-w-0 text-left">
+                <p className="truncate text-xs font-semibold text-(--adech-title)">
+                  {attempt.guess}
+                </p>
+                <p className="text-xs text-(--adech-paragraph)">{attempt.score}%</p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

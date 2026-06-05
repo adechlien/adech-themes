@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { IconBook, IconBrackets, IconBrandTailwind, IconChevronDown, IconCode, IconCopy, IconPackage, IconPalette, IconCheck } from "@tabler/icons-react";
+import { useState } from "react";
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
@@ -16,148 +17,215 @@ function CopyButton({ text }) {
   return (
     <button
       onClick={onCopy}
-      className="h-9 rounded-lg bg-white/5 px-3 text-xs text-white/80 ring-1 ring-white/10 hover:bg-white/10 transition"
+      className="flex items-center cursor-pointer text-(--adech-nav-fg) transition"
       type="button"
+      aria-label="Copy code"
+      title="Copy code"
     >
-      {copied ? "Copied" : "Copy"}
+      <span
+        key={copied ? "check" : "copy"}
+        className="inline-flex animate-tabEnter"
+      >
+        {copied ? <IconCheck stroke={2} size={20} /> : <IconCopy stroke={2} size={20} />}
+      </span>
     </button>
   );
 }
 
-function CodeBlock({ title, code }) {
+function CodePreview({ title, description, code, icon: Icon, open, onToggle }) {
   return (
-    <div className="rounded-2xl bg-black/20 ring-1 ring-white/10 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <p className="text-xs font-medium text-white/70">{title}</p>
-        <CopyButton text={code} />
-      </div>
-      <pre className="px-4 py-4 text-[12px] leading-relaxed text-white/80 overflow-auto">
-        <code>{code}</code>
-      </pre>
+    <div className="overflow-hidden rounded-lg bg-(--adech-surface) ring-1 ring-(--adech-border)">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start justify-between gap-4 p-4 text-left"
+        aria-expanded={open}
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="text-(--adech-muted)">
+              {Icon ? <Icon size={20} stroke={2} /> : null}
+            </div>
+
+            <h3 className="text-xl font-semibold text-(--adech-title)">
+              {title}
+            </h3>
+          </div>
+
+          <p className="text-sm leading-relaxed text-(--adech-paragraph)">
+            {description}
+          </p>
+        </div>
+
+        <IconChevronDown
+          size={20}
+          stroke={2}
+          className={[
+            "mt-1 shrink-0 text-(--adech-muted) transition-transform duration-200",
+            open ? "rotate-180" : "",
+          ].join(" ")}
+        />
+      </button>
+
+      {open && (
+        <div className="flex items-start justify-between gap-4 border-t border-(--adech-border) bg-(--adech-surface-strong) p-4 animate-tabEnter">
+          <pre className="overflow-x-auto text-sm leading-6 text-(--adech-fg)">
+            <code>{code}</code>
+          </pre>
+          <CopyButton text={code} />
+        </div>
+      )}
     </div>
   );
 }
 
-export default function DocsSection() {
-  const tabs = useMemo(
-    () => [
-      { id: "install", label: "Install" },
-      { id: "tailwind", label: "Tailwind" },
-      { id: "css", label: "CSS Variables" },
-    ],
-    []
-  );
+const DOC_SECTIONS = [
+  {
+    id: "install",
+    icon: IconPackage,
+    title: "Install Adech Themes",
+    description:
+      "Add the package to your project first, then choose how you want to consume the tokens: Tailwind v4, Tailwind v3 preset, CSS variables or JSON exports.",
+    code: `npm i @adech/themes`,
+  },
+  {
+    id: "tailwind-v4",
+    icon: IconBrandTailwind,
+    title: "Adech with Tailwind v4",
+    description:
+      "Import the Tailwind export of the Superior branch and start using Adech tokens directly in your utility classes.",
+    code: `@import "tailwindcss";
+@import "@adech/themes/superior/tailwind";
 
-  const [tab, setTab] = useState("install");
-
-  const content = useMemo(() => {
-    if (tab === "install") {
-      return {
-        title: "Install with npm",
-        desc:
-          "Instala el paquete y luego elige si usas Tailwind tokens o variables CSS.",
-        code: `npm i @adech/themes`,
-      };
-    }
-
-    if (tab === "tailwind") {
-      return {
-        title: "Use Adech tokens in Tailwind",
-        desc:
-          "Usa clases estables como bg-core-12, text-core-1, etc. (mapeadas a CSS variables).",
-        code: `export default function Card() {
+export default function Card() {
   return (
-    <div className="bg-core-12 text-core-1 rounded-2xl p-6 ring-1 ring-core-2/15">
-      <p className="text-core-2/80">Adech Superior</p>
+    <div className="rounded-2xl bg-adech-swamp-2 p-6 text-adech-boulevard-1 ring-1 ring-adech-void-2/25">
+      <p className="text-adech-boulevard-3">Adech Superior</p>
+      <h3 className="mt-2 text-xl font-semibold">
+        Portable tokens for interfaces
+      </h3>
 
-      <button className="mt-4 rounded-xl bg-core-3/20 px-4 py-2 text-core-3 hover:bg-core-3/30 transition">
-        Button
+      <button className="mt-4 rounded-xl bg-adech-venomous-4 px-4 py-2 text-adech-venomous-4">
+        Explore
       </button>
     </div>
   );
 }`,
-      };
-    }
+  },
+  {
+    id: "tailwind-v3",
+    icon: IconCode,
+    title: "Adech with Tailwind v3",
+    description:
+      "If your project still runs on Tailwind CSS v3, use the preset export from the Superior branch.",
+    code: `// tailwind.config.cjs
+module.exports = {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  presets: [require("@adech/themes/superior/preset")],
+};`,
+  },
+  {
+    id: "css",
+    icon: IconBrackets,
+    title: "CSS Variables",
+    description:
+      "Import the generated CSS file and use the Adech custom properties in any framework or plain CSS setup.",
+    code: `@import "@adech/themes/superior/css";
 
-    return {
-      title: "CSS variables (like Nord Usage)",
-      desc:
-        "Importa tu CSS de tokens y usa var(--core-*) en estilos. (Nord muestra este patrón en su guía de uso).",
-      code: `/* Example: core tokens */
-:root {
-  --core-1: 199 220 255; /* #C7DCFF */
-  --core-2: 180 208 255; /* #B4D0FF */
-  --core-3: 161 196 255; /* #A1C4FF */
-  --core-4: 143 177 240; /* #8FB1F0 */
-  /* --core-5 .. --core-12 */
+.hero {
+  background: var(--adech-swamp-2);
+  color: var(--adech-boulevard-1);
+  border: 1px solid var(--adech-void-2);
 }
 
-/* Usage */
-.hero {
-  background: rgb(var(--core-12));
-  color: rgb(var(--core-1));
+.button {
+  background: var(--adech-venomous-4);
+  color: var(--adech-swamp-3);
+}
+
+.button:hover {
+  background: var(--adech-venomous-5);
 }`,
-    };
-  }, [tab]);
+  },
+  {
+    id: "json",
+    icon: IconBook,
+    title: "Consume JSON Tokens",
+    description:
+      "Use the JSON export when you need programmatic access to Adech palettes for tooling, scripts or dynamic style generation.",
+    code: `import superior from "@adech/themes/superior/json";
+
+console.log(superior.boulevard["1"]); // #C7DCFF
+console.log(superior.swamp["2"]); // #142039
+
+const theme = {
+  background: superior.swamp["2"],
+  foreground: superior.boulevard["1"],
+  border: superior.void["2"],
+};`,
+  },
+  {
+    id: "superior",
+    icon: IconPalette,
+    title: "Explore the Superior Branch",
+    description:
+      "Superior is the refined Adech branch built for interfaces, editors and cross-workspace usage. It includes the main palettes and the contract colors used across ports.",
+    code: `/* Example token names */
+
+--adech-boulevard-1
+--adech-boulevard-2
+--adech-boulevard-3
+--adech-boulevard-4
+
+--adech-venomous-1
+--adech-venomous-2
+--adech-venomous-3
+--adech-venomous-4
+--adech-venomous-5
+
+--adech-swamp-1
+--adech-swamp-2
+--adech-swamp-3
+
+--adech-sunny-1
+--adech-sunny-2
+--adech-sunny-3
+
+--adech-void-1
+--adech-void-2
+--adech-void-3`,
+  },
+];
+
+export default function DocsSection() {
+  const [openSection, setOpenSection] = useState(null);
 
   return (
-    <section id="docs" className="scroll-mt-24">
+    <section id="docs" className="flex flex-col gap-6 scroll-mt-24">
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">
+          <h2 className="text-4xl text-(--adech-title) font-bebas">
             Docs
           </h2>
-          <p className="mt-2 text-sm text-white/70 max-w-2xl">
-            Instalación y uso al estilo “Usage” de Nord: primero instalar, luego
-            elegir tu forma de consumir los tokens.
+          <p className="text-sm text-(--adech-paragraph) max-w-lg">
+            Learn how to install, integrate and use Adech Themes in your own projects.
           </p>
-        </div>
-
-        <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1 ring-1 ring-white/10">
-          {tabs.map((t) => {
-            const active = t.id === tab;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={[
-                  "h-9 px-4 rounded-lg text-sm transition",
-                  active
-                    ? "bg-core-3/20 text-core-1 ring-1 ring-core-3/25"
-                    : "text-white/70 hover:text-white hover:bg-white/5",
-                ].join(" ")}
-                type="button"
-              >
-                {t.label}
-              </button>
-            );
-          })}
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-3xl bg-white/5 ring-1 ring-white/10 p-6">
-          <p className="text-xs text-white/55">Guide</p>
-          <h3 className="mt-1 text-lg font-semibold text-white">How to use</h3>
-          <p className="mt-2 text-sm text-white/70">{content.desc}</p>
-
-          <div className="mt-5 space-y-2 text-sm text-white/70">
-            <div className="rounded-2xl bg-black/20 ring-1 ring-white/10 p-4">
-              <p className="text-white/80 font-medium">Recommended</p>
-              <p className="mt-1 text-white/65">
-                Usa Tailwind tokens (<span className="text-white/80">core-1..core-12</span>) para mantener tu UI estable.
-              </p>
-            </div>
-            <div className="rounded-2xl bg-black/20 ring-1 ring-white/10 p-4">
-              <p className="text-white/80 font-medium">Also works</p>
-              <p className="mt-1 text-white/65">
-                Variables CSS si no usas Tailwind o quieres runtime styling.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <CodeBlock title={content.title} code={content.code} />
+      <div className="flex flex-col gap-3">
+        {DOC_SECTIONS.map((section) => (
+          <CodePreview
+            key={section.id}
+            {...section}
+            open={openSection === section.id}
+            onToggle={() =>
+              setOpenSection((current) =>
+                current === section.id ? null : section.id
+              )
+            }
+          />
+        ))}
       </div>
     </section>
   );

@@ -1,16 +1,15 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useNpmVersion } from "../hooks/useNpmVersion";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import ThemeToggleButton from "./ThemeToggleButton";
 
 const TABS = [
   { id: "home", label: "Home" },
-  { id: "branches", label: "Branches" },
-  { id: "workspaces", label: "Workspaces" },
   { id: "docs", label: "Docs" },
+  { id: "workspaces", label: "Workspaces" },
+  { id: "branches", label: "Branches" },
   { id: "tools", label: "Tools" },
 ];
 
 export default function Header({ activeTab, onChangeTab }) {
-  const { version, status } = useNpmVersion("@adech/themes", { cacheMinutes: 60 });
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -24,9 +23,9 @@ export default function Header({ activeTab, onChangeTab }) {
     opacity: 0,
   });
 
-  const linkBase = "relative z-10 text-base transition px-4 py-1 rounded-lg uppercase font-semibold";
-  const linkActive = "text-adech-swamp-1";
-  const linkIdle = "text-adech-boulevard-4 hover:cursor-pointer";
+  const linkBase = "relative z-10 text-base transition px-4 py-1 rounded-lg font-semibold";
+  const linkActive = "text-(--adech-nav-fg-active)";
+  const linkIdle = "text-(--adech-nav-fg) hover:cursor-pointer";
 
   const activeItem = useMemo(
     () => TABS.find((tab) => tab.id === activeTab) || TABS[0],
@@ -38,7 +37,7 @@ export default function Header({ activeTab, onChangeTab }) {
     setOpen(false);
   };
 
-  const updateSlider = () => {
+  const updateSlider = useCallback(() => {
     const activeButton = navTabRefs.current[activeTab];
     if (!activeButton) return;
 
@@ -49,11 +48,11 @@ export default function Header({ activeTab, onChangeTab }) {
       y: activeButton.offsetTop,
       opacity: 1,
     });
-  };
+  }, [activeTab]);
 
   useLayoutEffect(() => {
     updateSlider();
-  }, [activeTab]);
+  }, [updateSlider]);
 
   useEffect(() => {
     updateSlider();
@@ -62,7 +61,7 @@ export default function Header({ activeTab, onChangeTab }) {
     window.addEventListener("resize", onResize);
 
     return () => window.removeEventListener("resize", onResize);
-  }, [activeTab]);
+  }, [updateSlider]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -95,21 +94,19 @@ export default function Header({ activeTab, onChangeTab }) {
       >
         <img src="/adech-logo.svg" className="w-8 shrink-0" alt="Adech Theme" />
         <span className="truncate text-2xl">Adech</span>
-        <span className="shrink-0 text-xs text-adech-venomous-2">
-          {status === "loading" ? "…" : version ? `v${version}` : "v—"}
-        </span>
       </button>
 
-      <nav className="relative hidden md:flex gap-2 font-bellota bg-adech-swamp-3 rounded-xl p-1">
-        <span
-          className="pointer-events-none absolute left-0 top-0 rounded-lg bg-adech-boulevard-4 transition-all duration-300 ease-out"
-          style={{
-            width: `${sliderStyle.width}px`,
-            height: `${sliderStyle.height}px`,
-            transform: `translate(${sliderStyle.x}px, ${sliderStyle.y}px)`,
-            opacity: sliderStyle.opacity,
-          }}
-        />
+      <div className="flex gap-2">
+        <nav className="relative hidden md:flex gap-2 font-bellota bg-(--adech-nav-bg) rounded-xl p-1">
+          <span
+            className="pointer-events-none absolute left-0 top-0 rounded-lg bg-(--adech-nav-bg-active) transition-all duration-300 ease-out"
+            style={{
+              width: `${sliderStyle.width}px`,
+              height: `${sliderStyle.height}px`,
+              transform: `translate(${sliderStyle.x}px, ${sliderStyle.y}px)`,
+              opacity: sliderStyle.opacity,
+            }}
+          />
 
         {TABS.map((tab) => {
           const isCurrent = activeTab === tab.id;
@@ -135,20 +132,19 @@ export default function Header({ activeTab, onChangeTab }) {
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="flex items-center gap-2 rounded-xl transition hover:cursor-pointer p-1 bg-adech-swamp-3"
+          className="flex items-center gap-2 rounded-xl transition hover:cursor-pointer p-1 bg-(--adech-nav-bg)"
           aria-haspopup="menu"
           aria-expanded={open}
         >
-          <span className="text-base px-4 py-1 rounded-lg uppercase font-semibold bg-adech-boulevard-4 text-adech-swamp-1">
+          <span className="text-base px-4 py-1 rounded-lg font-semibold bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)">
             {activeItem.label}
           </span>
         </button>
-
         <div
           className={[
             "absolute right-0 top-[calc(100%+0.5rem)] z-30",
-            "rounded-xl bg-adech-swamp-3 p-1 shadow-lg",
-            "origin-top-right transition-all duration-200",
+            "rounded-xl p-1 shadow-lg",
+            "origin-top-right transition-all duration-200 bg-(--adech-nav-bg)",
             open
               ? "visible scale-100 opacity-100 pointer-events-auto"
               : "invisible scale-95 opacity-0 pointer-events-none",
@@ -164,10 +160,8 @@ export default function Header({ activeTab, onChangeTab }) {
                   key={tab.id}
                   type="button"
                   onClick={() => go(tab.id)}
-                  className={`text-base transition px-4 py-1 rounded-lg uppercase font-semibold text-right ${
-                    isCurrent
-                      ? "bg-adech-boulevard-4 text-adech-swamp-1"
-                      : "text-adech-boulevard-4 hover:bg-adech-swamp-1 hover:cursor-pointer"
+                  className={`text-base transition px-4 py-1 rounded-lg font-semibold text-right ${
+                    isCurrent ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)" : "text-(--adech-nav-fg) hover:cursor-pointer"
                   }`}
                   aria-current={isCurrent ? "page" : undefined}
                   role="menuitem"
@@ -178,6 +172,9 @@ export default function Header({ activeTab, onChangeTab }) {
             })}
           </nav>
         </div>
+        </div>
+
+      <ThemeToggleButton open={open} setOpen={setOpen} />
       </div>
     </header>
   );

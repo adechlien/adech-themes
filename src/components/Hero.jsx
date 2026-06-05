@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconCopy, IconCheck } from "@tabler/icons-react";
 
 function CopyButton({ text }) {
@@ -30,14 +23,14 @@ function CopyButton({ text }) {
         setCopied(false);
       }, 1200);
     } catch {
-      // noop
+      // niente
     }
   };
 
   return (
     <button
       onClick={onCopy}
-      className="flex items-center cursor-pointer text-adech-boulevard-2 transition"
+      className="flex items-center cursor-pointer text-(--adech-nav-fg) transition"
       type="button"
       aria-label="Copy code"
       title="Copy code"
@@ -54,14 +47,14 @@ function CopyButton({ text }) {
 
 function CodeBlock({ title, code, tabKey }) {
   return (
-    <div className="w-full overflow-hidden rounded-xl bg-adech-swamp-3">
-      <div className="flex items-center justify-between border-b border-adech-swamp-1 px-4 py-3">
-        <p className="text-xs font-medium text-adech-boulevard-1">{title}</p>
+    <div className="w-full overflow-hidden rounded-xl bg-(--adech-nav-bg)">
+      <div className="flex items-center justify-between border-b border-(--adech-bg) px-4 py-3">
+        <p className="text-xs font-medium text-(--adech-nav-fg)">{title}</p>
         <CopyButton text={code} />
       </div>
 
       <div key={tabKey} className="animate-tabEnter">
-        <pre className="overflow-x-auto px-4 py-4 text-xs leading-relaxed text-adech-boulevard-3">
+        <pre className="overflow-x-auto px-4 py-4 text-xs leading-relaxed text-(--adech-nav-fg)">
           <code>{code}</code>
         </pre>
       </div>
@@ -69,153 +62,32 @@ function CodeBlock({ title, code, tabKey }) {
   );
 }
 
-function DocsPreview() {
-  const tabs = useMemo(
-    () => [
-      { id: "install", label: "Installation" },
-      { id: "tailwind4", label: "TailwindCSS v4" },
-      { id: "tailwind3", label: "TailwindCSS v3" },
-      { id: "css", label: "CSS Variables" },
-    ],
-    []
-  );
-
-  const [tab, setTab] = useState("install");
-
-  const tabRefs = useRef({});
-  const [sliderStyle, setSliderStyle] = useState({
-    width: 0,
-    height: 0,
-    x: 0,
-    y: 0,
-    opacity: 0,
-  });
-
-  const updateSlider = useCallback(() => {
-    const activeButton = tabRefs.current[tab];
-    if (!activeButton) return;
-
-    setSliderStyle({
-      width: activeButton.offsetWidth,
-      height: activeButton.offsetHeight,
-      x: activeButton.offsetLeft,
-      y: activeButton.offsetTop,
-      opacity: 1,
-    });
-  }, [tab]);
-
-  useLayoutEffect(() => {
-    updateSlider();
-  }, [updateSlider]);
-
-  useEffect(() => {
-    updateSlider();
-
-    const onResize = () => updateSlider();
-
-    window.addEventListener("resize", onResize);
-
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(() => {
-        updateSlider();
-      });
-    }
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-    };
-  }, [updateSlider]);
-
-  const content = useMemo(() => {
-    if (tab === "install") {
-      return {
-        title: "Install from npm",
-        code: `npm install @adech/themes`,
-      };
-    }
-
-    if (tab === "tailwind4") {
-      return {
-        title: "index.css",
-        code: `@import "tailwindcss";
-@import "@adech/themes/superior/tailwind";`,
-      };
-    }
-
-    if (tab === "tailwind3") {
-      return {
-        title: "tailwind.config.js",
-        code: `module.exports = {
-  presets: [require("@adech/themes/superior/preset")],
-  content: ["./src/**/*.{js,ts,jsx,tsx,html}"]
-};`,
-      };
-    }
-
-    return {
-      title: "styles.css",
-      code: `@import "@adech/themes/superior/css";
-
-.card {
-  background: var(--adech-swamp-3);
-  color: var(--adech-boulevard-1);
-}`,
-    };
-  }, [tab]);
-
+function InstallPreview({ onReadDocs }) {
   return (
     <section id="docs" className="flex w-full min-w-0 flex-col gap-2">
       <div className="min-w-0">
-        <p className="text-sm text-adech-boulevard-3">
-          Install Adech Themes from npm and use{" "}
-          <span className="font-semibold">Superior</span> through public subpaths for
-          Tailwind CSS v4, v3, or CSS variables.
+        <p className="text-sm text-(--adech-hero-paragraph)">
+          Start by installing the package. The full docs show how to use Adech
+          Themes with Tailwind, CSS variables, JSON exports, and presets.
         </p>
       </div>
 
       <div className="flex w-full min-w-0 flex-col gap-2">
-        <div className="w-full min-w-0">
-          <div className="relative grid w-full min-w-0 grid-cols-2 gap-1 overflow-hidden rounded-xl bg-adech-swamp-3 p-1 sm:grid-cols-4">
-            <span
-              className="pointer-events-none absolute rounded-lg bg-adech-boulevard-4 transition-all duration-300 ease-out"
-              style={{
-                width: `${sliderStyle.width}px`,
-                height: `${sliderStyle.height}px`,
-                transform: `translate(${sliderStyle.x}px, ${sliderStyle.y}px)`,
-                opacity: sliderStyle.opacity,
-              }}
-            />
-
-            {tabs.map((t) => {
-              const active = t.id === tab;
-
-              return (
-                <button
-                  key={t.id}
-                  ref={(node) => {
-                    if (node) {
-                      tabRefs.current[t.id] = node;
-                    }
-                  }}
-                  onClick={() => setTab(t.id)}
-                  className={[
-                    "relative z-10 min-w-0 rounded-lg px-3 py-2 text-center text-sm leading-tight whitespace-normal break-words transition cursor-pointer",
-                    active
-                      ? "font-semibold text-adech-swamp-3"
-                      : "text-adech-boulevard-4",
-                  ].join(" ")}
-                  type="button"
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="w-full min-w-0 min-h-52">
-          <CodeBlock title={content.title} code={content.code} tabKey={tab} />
+          <CodeBlock
+            title="Install from npm"
+            code="npm install @adech/themes"
+            tabKey="install"
+          />
         </div>
+
+        <button
+          type="button"
+          onClick={onReadDocs}
+          className="self-start rounded-lg bg-(--adech-hero-bg-button) px-4 py-2 text-sm font-medium text-(--adech-hero-fg-button) cursor-pointer"
+        >
+          Read the docs
+        </button>
       </div>
     </section>
   );
@@ -231,7 +103,7 @@ export default function Hero({ activeTab, onChangeTab }) {
   return (
     <section className="flex min-w-0 flex-col items-start gap-8 sm:grid sm:grid-cols-2 sm:items-start">
       <div className="mx-auto flex w-full min-w-0 flex-col gap-3 self-start">
-        <p className="text-sm font-medium uppercase tracking-widest text-adech-venomous-4">
+        <p className="text-sm font-medium uppercase tracking-widest text-(--adech-hero-subtitle)">
           Portable tokens for interfaces
         </p>
 
@@ -239,29 +111,25 @@ export default function Hero({ activeTab, onChangeTab }) {
           Loneliness and introspection
         </h1>
 
-        <p className="text-sm text-adech-boulevard-2 sm:text-base">
+        <p className="text-sm text-(--adech-hero-paragraph) sm:text-base">
           Adech is a portable theme ecosystem built around reusable branches for
-          interfaces and workspaces. Start with{" "}
-          <span className="font-semibold">Superior</span> and use it through{" "}
-          <span className="font-semibold">npm</span>,{" "}
-          <span className="font-semibold">Tailwind CSS v4</span>,{" "}
-          <span className="font-semibold">Tailwind CSS v3</span>, or{" "}
-          <span className="font-semibold">CSS variables</span>.
+          interfaces and workspaces. Install the package, then head into the docs
+          when you are ready to wire the tokens into your stack.
         </p>
 
         <div className="flex flex-wrap items-center justify-start gap-3">
           <button
             type="button"
             onClick={() => goTo("docs")}
-            className="rounded-lg bg-adech-venomous-2 px-4 py-2 text-sm font-medium text-adech-swamp-2 cursor-pointer"
+            className="rounded-lg bg-(--adech-hero-bg-button) px-4 py-2 text-sm font-medium text-(--adech-hero-fg-button) cursor-pointer"
           >
-            Installation
+            Read docs
           </button>
 
           <button
             type="button"
             onClick={() => goTo("branches")}
-            className="text-sm font-medium text-adech-venomous-1 cursor-pointer"
+            className="text-sm font-medium text-(--adech-hero-subtitle) cursor-pointer"
           >
             Meet the Themes
           </button>
@@ -269,7 +137,7 @@ export default function Hero({ activeTab, onChangeTab }) {
       </div>
 
       <div className="w-full min-w-0 self-start">
-        <DocsPreview />
+        <InstallPreview onReadDocs={() => goTo("docs")} />
       </div>
     </section>
   );

@@ -6,7 +6,7 @@ export default function Home({ activeTab, onChangeTab }) {
   return (
     <>
       <Hero activeTab={activeTab} onChangeTab={onChangeTab} />
-      <BranchPreview />
+      <BranchPreview onExploreBranches={() => onChangeTab("branches")} />
       {/* <ComingSoon />*/}
     </>
   );

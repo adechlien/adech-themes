@@ -49,8 +49,8 @@ function Pill({ ok, children }) {
       className={[
         "rounded-full px-3 py-1 text-xs ring-1",
         ok
-          ? "bg-core-3/15 text-white/80 ring-core-3/20"
-          : "bg-white/5 text-white/55 ring-white/10",
+          ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active) ring-(--adech-nav-bg-active)"
+          : "bg-(--adech-surface) text-(--adech-muted) ring-(--adech-border)",
       ].join(" ")}
     >
       {children}
@@ -82,19 +82,12 @@ export default function ContrastChecker() {
   };
 
   return (
-    <div className="rounded-3xl bg-white/5 ring-1 ring-white/10 p-6">
+    <div className="">
       <div className="flex items-start justify-between gap-6 flex-wrap">
-        <div>
-          <h3 className="text-lg font-semibold text-white">Contrast Checker</h3>
-          <p className="mt-1 text-sm text-white/70 max-w-2xl">
-            Check readability between two colors. Helpful to validate token pairs
-            for UI text and backgrounds.
-          </p>
-        </div>
 
         <button
           onClick={copyResult}
-          className="h-10 rounded-xl bg-white/5 px-4 text-sm text-white/85 ring-1 ring-white/10 hover:bg-white/10 transition"
+          className="text-sm text-(--adech-title) transition"
           type="button"
         >
           Copy result
@@ -102,41 +95,41 @@ export default function ContrastChecker() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-2xl bg-black/20 ring-1 ring-white/10 p-5">
+        <div className="">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-white/55">Foreground</label>
+              <label className="text-xs text-(--adech-paragraph)">Foreground</label>
               <div className="mt-2 flex items-center gap-2">
                 <input
                   value={fg}
                   onChange={(e) => setFg(e.target.value)}
-                  className="h-10 w-full rounded-xl bg-white/5 px-3 text-sm text-white/85 ring-1 ring-white/10 outline-none"
+                  className="h-10 w-full rounded-lg bg-(--adech-surface-strong) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
                   placeholder="#F6F8FE"
                 />
                 <input
                   type="color"
                   value={fg}
                   onChange={(e) => setFg(e.target.value)}
-                  className="h-10 w-12 rounded-xl bg-transparent ring-1 ring-white/10"
+                  className="h-10 w-12 rounded-lg bg-(--adech-surface-strong)"
                   aria-label="Pick foreground color"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-white/55">Background</label>
+              <label className="text-xs text-(--adech-paragraph)">Background</label>
               <div className="mt-2 flex items-center gap-2">
                 <input
                   value={bg}
                   onChange={(e) => setBg(e.target.value)}
-                  className="h-10 w-full rounded-xl bg-white/5 px-3 text-sm text-white/85 ring-1 ring-white/10 outline-none"
+                  className="h-10 w-full rounded-lg bg-(--adech-surface-strong) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
                   placeholder="#091A2B"
                 />
                 <input
                   type="color"
                   value={bg}
                   onChange={(e) => setBg(e.target.value)}
-                  className="h-10 w-12 rounded-xl bg-transparent ring-1 ring-white/10"
+                  className="h-10 w-12 rounded-lg bg-(--adech-surface-strong)"
                   aria-label="Pick background color"
                 />
               </div>
@@ -144,15 +137,15 @@ export default function ContrastChecker() {
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2 rounded-xl bg-white/5 p-1 ring-1 ring-white/10">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setSize("normal")}
                 className={[
                   "h-9 px-4 rounded-lg text-sm transition",
                   size === "normal"
-                    ? "bg-core-3/20 text-white ring-1 ring-core-3/25"
-                    : "text-white/70 hover:text-white hover:bg-white/5",
+                    ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active) ring-1 ring-(--adech-nav-bg-active)"
+                    : "text-(--adech-paragraph) hover:bg-(--adech-surface-strong) hover:text-(--adech-title)",
                 ].join(" ")}
               >
                 Normal text
@@ -163,8 +156,8 @@ export default function ContrastChecker() {
                 className={[
                   "h-9 px-4 rounded-lg text-sm transition",
                   size === "large"
-                    ? "bg-core-3/20 text-white ring-1 ring-core-3/25"
-                    : "text-white/70 hover:text-white hover:bg-white/5",
+                    ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active) ring-1 ring-(--adech-nav-bg-active)"
+                    : "text-(--adech-paragraph) hover:bg-(--adech-surface-strong) hover:text-(--adech-title)",
                 ].join(" ")}
               >
                 Large text
@@ -173,7 +166,7 @@ export default function ContrastChecker() {
 
             <button
               onClick={onSwap}
-              className="h-10 rounded-xl bg-white/5 px-4 text-sm text-white/85 ring-1 ring-white/10 hover:bg-white/10 transition"
+              className="h-10 rounded-xl bg-(--adech-surface-strong) px-4 text-sm text-(--adech-title) ring-1 ring-(--adech-border) transition hover:bg-(--adech-surface-muted)"
               type="button"
             >
               Swap
@@ -181,8 +174,8 @@ export default function ContrastChecker() {
           </div>
         </div>
 
-        <div className="rounded-2xl ring-1 ring-white/10 overflow-hidden">
-          <div className="p-5" style={{ backgroundColor: bg, color: fg }}>
+        <div className="overflow-hidden">
+          <div className="rounded-t-xl p-5" style={{ backgroundColor: bg, color: fg }}>
             <p className="text-xs opacity-80">Preview</p>
             <p className="mt-2 text-2xl font-semibold tracking-tight">
               Contrast {formatted}:1
@@ -215,16 +208,16 @@ export default function ContrastChecker() {
             </div>
           </div>
 
-          <div className="bg-black/20 border-t border-white/10 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-b-xl border-t border-(--adech-border) bg-(--adech-surface-strong) p-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Pill ok={passes.aa}>AA</Pill>
               <Pill ok={passes.aaa}>AAA</Pill>
-              <span className="text-xs text-white/55">
+              <span className="text-xs text-(--adech-muted)">
                 ({size === "large" ? "large" : "normal"} text)
               </span>
             </div>
 
-            <span className="text-xs text-white/55">
+            <span className="text-xs text-(--adech-muted)">
               {ratio ? "WCAG contrast ratio" : "Invalid HEX"}
             </span>
           </div>

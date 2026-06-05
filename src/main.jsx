@@ -56,10 +56,10 @@ export function Root() {
         <main className="mx-8 sm:px-16 py-16 sm:py-32">
           <div key={activeTab} className="flex flex-col gap-32 animate-tabEnter">
             {activeTab === "home" && <Home activeTab={activeTab} onChangeTab={setActiveTab} />}
-            {activeTab === "branches" && <WIP />}
+            {activeTab === "docs" && <DocsSection />}
             {activeTab === "workspaces" && <WorkspacesSection />}
-            {activeTab === "docs" && <WIP />}
-            {activeTab === "tools" && <WIP />}
+            {activeTab === "branches" && <BranchesSection />}
+            {activeTab === "tools" && <ToolsSection />}
           </div>
         </main>
       </div>

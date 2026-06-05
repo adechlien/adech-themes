@@ -1,6 +1,6 @@
 import FooterSvg from "./FooterSvg";
+import { useNpmVersion } from "../hooks/useNpmVersion";
 
-// src/components/layout/Footer.jsx
 const NAV = [
   { label: "Branches", href: "#branches" },
   { label: "Workspaces", href: "#workspaces" },
@@ -23,7 +23,7 @@ function FooterLink({ href, label }) {
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noreferrer" : undefined}
-      className="text-sm text-adech-boulevard-3 transition hover:text-adech-venomous-3"
+      className="text-sm text-(--adech-footer-paragraph) transition hover:text-(--adech-footer-fg)"
     >
       {label}
     </a>
@@ -31,11 +31,13 @@ function FooterLink({ href, label }) {
 }
 
 export default function Footer() {
+  const { version, status } = useNpmVersion("@adech/themes", { cacheMinutes: 60 });
+
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-20 bg-adech-swamp-3 text-adech-boulevard-1">
-      <img src="/footer.svg" alt="Adech Theme" className="w-full bg-adech-swamp-1" />
+    <footer className="mt-20 bg-(--adech-footer-bg) text-(--adech-footer-fg)">
+      <img src="/footer.svg" alt="Adech Theme" className="w-full bg-(--adech-bg)" />
       {/* <FooterSvg /> */}
 
       <div className="mx-auto max-w-6xl p-8 sm:px-6 lg:px-8">
@@ -49,8 +51,13 @@ export default function Footer() {
             />
 
             <div className="min-w-0 text-left">
-              <p className="text-base font-semibold sm:text-lg">Adech Theme</p>
-              <p className="mt-1 text-sm leading-relaxed text-adech-boulevard-3">
+              <p className="text-base font-semibold sm:text-lg">
+                Adech Theme
+                <span className="text-sm font-normal">
+                  {status === "loading" ? "…" : version ? ` v${version}` : " v—"}
+                </span>
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-(--adech-footer-paragraph)">
                 A portable theme ecosystem built around reusable branches and design
                 tokens for interfaces and workspaces.
               </p>
@@ -82,8 +89,8 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 border-t border-adech-swamp-1 pt-4 px-4">
-          <p className="text-center sm:text-left text-xs text-adech-boulevard-3">
+        <div className="mt-10 border-t border-(--adech-bg) pt-4 px-4">
+          <p className="text-center sm:text-left text-xs text-(--adech-footer-paragraph)">
             © {year} Adech. All rights reserved.
           </p>
         </div>

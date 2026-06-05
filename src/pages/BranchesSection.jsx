@@ -1,88 +1,95 @@
-// src/components/BranchesSection.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import superior from "@adech/themes/superior/json";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
 
-const PALETTES = [
-  {
+const PALETTE_META = {
+  boulevard: {
     name: "Boulevard",
-    role: "Light palette",
     description:
-      "Blues for highlights, selection states, and calm emphasis in UI.",
-    colors: [
-      { token: "core-1", hex: "#C7DCFF" },
-      { token: "core-2", hex: "#B4D0FF" },
-      { token: "core-3", hex: "#A1C4FF" },
-      { token: "core-4", hex: "#8FB1F0" },
-    ],
+      "The city, distance, and the quiet loneliness that can exist even in a crowded world.",
   },
-  {
+  venomous: {
     name: "Venomous",
-    role: "Accent palette",
     description:
-      "Soft greens and violets for accents, badges, and secondary emphasis.",
-    colors: [
-      { token: "core-5", hex: "#B0D8BE" },
-      { token: "core-6", hex: "#D9EEDB" },
-      { token: "core-7", hex: "#F6F8FE" },
-      { token: "core-8", hex: "#DBCCE8" },
-      { token: "core-9", hex: "#C7AFD7" },
-    ],
+      "The nature, ancient presence, and the magical force of everything we cannot fully explain.",
   },
-  {
+  swamp: {
     name: "Swamp",
-    role: "Dark palette",
     description:
-      "Deep blues for backgrounds, panels, and editor surfaces.",
-    colors: [
-      { token: "core-10", hex: "#1E2646" },
-      { token: "core-11", hex: "#142039" },
-      { token: "core-12", hex: "#091A2B" },
-    ],
+      "The calm, breathing space, and the quiet strength of staying with yourself.",
   },
-];
+  sunny: {
+    name: "Sunny",
+    description:
+      "The warmth, unexpected emotion, and that quiet energy that arrives without explanation.",
+  },
+  void: {
+    name: "Void",
+    description:
+      "The indifference, emptiness, and the quiet acceptance of what cannot be changed.",
+  },
+};
 
-// ===== Contraste (tu función) =====
-function getContrast(color) {
-  let r = parseInt(color.substring(1, 3), 16);
-  let g = parseInt(color.substring(3, 5), 16);
-  let b = parseInt(color.substring(5, 7), 16);
-  let brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 128 ? "#222" : "#eee";
+function getContrastToken(color) {
+  const r = parseInt(color.substring(1, 3), 16);
+  const g = parseInt(color.substring(3, 5), 16);
+  const b = parseInt(color.substring(5, 7), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+  return brightness > 128 ? "text-adech-swamp-1" : "text-adech-venomous-3";
 }
 
-// ===== TheColorAPI cache =====
 const nameCache = new Map();
+
 async function fetchColorName(hex, signal) {
   const key = hex.toUpperCase();
   if (nameCache.has(key)) return nameCache.get(key);
 
   const clean = key.replace("#", "");
-  const res = await fetch(`https://www.thecolorapi.com/id?hex=${clean}`, { signal });
-  if (!res.ok) throw new Error("Color API failed");
+  const res = await fetch(`https://www.thecolorapi.com/id?hex=${clean}`, {
+    signal,
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch color name");
+
   const data = await res.json();
   const value = data?.name?.value || key;
+
   nameCache.set(key, value);
   return value;
 }
 
-function SwatchCard({ token, hex }) {
+function Swatch({ token, hex, isFirst, isLast }) {
   const [name, setName] = useState(token);
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef(null);
 
-  const textColor = useMemo(() => getContrast(hex), [hex]);
+  const textColorClass = useMemo(() => getContrastToken(hex), [hex]);
 
   useEffect(() => {
     const controller = new AbortController();
+
     fetchColorName(hex, controller.signal)
-      .then((n) => setName(n))
+      .then((nextName) => setName(nextName))
       .catch(() => setName(token));
+
     return () => controller.abort();
   }, [hex, token]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(hex);
+
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
       setCopied(true);
-      setTimeout(() => setCopied(false), 900);
+      timeoutRef.current = setTimeout(() => setCopied(false), 1200);
     } catch {
       // noop
     }
@@ -92,132 +99,150 @@ function SwatchCard({ token, hex }) {
     <button
       type="button"
       onClick={onCopy}
-      className="group rounded-2xl overflow-hidden ring-1 ring-white/10 bg-white/5 text-left transition hover:ring-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-core-3/40"
+      className={[
+        "group relative h-28 overflow-hidden text-left transition cursor-pointer",
+        "focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-(--adech-nav-bg-active)",
+        isFirst ? "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none" : "",
+        isLast ? "rounded-b-lg sm:rounded-r-lg sm:rounded-bl-none" : "",
+      ].join(" ")}
+      style={{ backgroundColor: hex }}
       title="Click to copy HEX"
       aria-label={`Copy ${hex}`}
     >
-      <div className="relative h-28" style={{ backgroundColor: hex }}>
-        <div className="absolute inset-0 p-3 flex flex-col justify-between">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: textColor }}>
-                {name}
-              </p>
-              <p className="text-xs opacity-80 truncate" style={{ color: textColor }}>
-                {token}
-              </p>
-            </div>
+      <div className="absolute inset-0 flex flex-col justify-between p-3">
+        <div className="flex items-start justify-between gap-2">
+          <p className={`truncate text-xs opacity-80 ${textColorClass}`}>
+            {token}
+          </p>
 
+          <span
+            className={[
+              "relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+              textColorClass,
+            ].join(" ")}
+          >
             <span
               className={[
-                "shrink-0 rounded-full px-2 py-1 text-[11px] font-medium ring-1 transition",
+                "absolute inset-0 flex items-center justify-center transition-all duration-300",
                 copied
-                  ? "opacity-100 translate-y-0"
+                  ? "opacity-0 pointer-events-none"
                   : "opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
               ].join(" ")}
-              style={{
-                color: textColor,
-                borderColor: `${textColor}55`,
-                backgroundColor: `${textColor}12`,
-              }}
             >
-              {copied ? "Copied" : "Copy"}
+              <IconCopy stroke={2} size={16} />
             </span>
-          </div>
-
-          <div className="flex items-end justify-between gap-2">
-            <p className="text-xs font-medium" style={{ color: textColor }}>
-              {hex.toUpperCase()}
-            </p>
-            <span className="text-[11px] opacity-80" style={{ color: textColor }}>
-              Click
+            <span
+              className={[
+                "absolute inset-0 flex items-center justify-center transition-all duration-200",
+                copied ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1",
+              ].join(" ")}
+            >
+              <IconCheck stroke={2} size={16} />
             </span>
-          </div>
+          </span>
         </div>
-      </div>
 
-      <div className="px-4 py-3 flex items-center justify-between">
-        <p className="text-xs text-white/55">Token</p>
-        <p className="text-xs text-white/80">{token}</p>
+        <div className="flex items-end justify-between gap-3">
+          <p className={`text-xs font-medium ${textColorClass}`}>
+            {hex.toUpperCase()}
+          </p>
+          <p className={`truncate text-sm font-semibold ${textColorClass}`}>
+            {name}
+          </p>
+        </div>
       </div>
     </button>
   );
 }
 
-function PaletteBlock({ palette }) {
+function PaletteRow({ palette }) {
+  const isRightAligned = palette.id === "venomous" || palette.id === "sunny";
+
   return (
-    <section className="rounded-3xl bg-white/5 ring-1 ring-white/10 p-6">
-      <div className="flex items-start justify-between gap-6 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-white">{palette.name}</h3>
-            <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-white/70 ring-1 ring-white/10">
-              {palette.role}
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-white/70 max-w-2xl">{palette.description}</p>
-        </div>
-
-        <div className="text-xs text-white/50">
-          Click a swatch to copy HEX
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {palette.colors.map((c) => (
-          <SwatchCard key={c.token} token={c.token} hex={c.hex} />
-        ))}
-      </div>
-
-      <div className="mt-5 rounded-2xl bg-black/20 ring-1 ring-white/10 p-4">
-        <p className="text-xs text-white/55">Suggested usage</p>
-        <p className="mt-1 text-sm text-white/75">
-          Use tokens <span className="text-white/90 font-medium">{palette.colors[0].token}</span> →{" "}
-          <span className="text-white/90 font-medium">{palette.colors[palette.colors.length - 1].token}</span>{" "}
-          for consistent styling across your UI.
+    <section className="flex flex-col gap-4">
+      <div
+        className={[
+          "flex flex-col",
+          isRightAligned ? "items-end text-right" : "items-start text-left",
+        ].join(" ")}
+      >
+        <h3 className="text-xl font-semibold text-(--adech-title)">
+          {palette.name}
+        </h3>
+        <p className="max-w-xl text-sm leading-relaxed text-(--adech-paragraph)">
+          {palette.description}
         </p>
+      </div>
+
+      <div className="overflow-hidden rounded-lg ring-1 ring-(--adech-border)">
+        <div
+          className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr"
+          style={{
+            gridTemplateColumns: `repeat(${palette.colors.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {palette.colors.map((color, index) => (
+            <Swatch
+              key={color.token}
+              token={color.token}
+              hex={color.hex}
+              isFirst={index === 0}
+              isLast={index === palette.colors.length - 1}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
 export default function BranchesSection() {
-  return (
-    <section className="flex flex-col gap-10">
-      {/* Intro (Nord-like) */}
-      <div className="rounded-3xl bg-white/5 ring-1 ring-white/10 p-8">
-        <p className="text-xs text-white/55">Colors & Palettes</p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">
-          Adech Superior
-        </h2>
-        <p className="mt-3 text-sm text-white/70 max-w-3xl">
-          Superior is structured in palettes (Boulevard, Venomous, Swamp). Each palette
-          groups colors by role (light, accent, dark) so you can build consistent UIs without
-          guessing. Inspired by Nord’s “Colors & Palettes” documentation style.
-        </p>
+  const palettes = useMemo(() => {
+    const families = superior?.subbranches || {};
 
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-2xl bg-black/20 ring-1 ring-white/10 p-4">
-            <p className="text-xs text-white/55">Tokenized</p>
-            <p className="mt-1 text-sm text-white/80">core-1 → core-12</p>
-          </div>
-          <div className="rounded-2xl bg-black/20 ring-1 ring-white/10 p-4">
-            <p className="text-xs text-white/55">Workflow</p>
-            <p className="mt-1 text-sm text-white/80">Pick palette → apply tokens</p>
-          </div>
-          <div className="rounded-2xl bg-black/20 ring-1 ring-white/10 p-4">
-            <p className="text-xs text-white/55">Action</p>
-            <p className="mt-1 text-sm text-white/80">Click swatches to copy HEX</p>
-          </div>
+    return Object.entries(families).map(([paletteKey, scale]) => {
+      const meta = PALETTE_META[paletteKey] || {
+        name: paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1),
+        description: "Palette from the Superior theme.",
+      };
+
+      const colors = Object.entries(scale).map(([step, hex]) => ({
+        token: `adech-${paletteKey}-${step}`,
+        hex,
+      }));
+
+      return {
+        id: paletteKey,
+        name: meta.name,
+        description: meta.description,
+        colors,
+      };
+    });
+  }, []);
+
+  return (
+    <section id="branches" className="flex flex-col gap-10 scroll-mt-24">
+      <div className="flex items-end justify-between gap-6 flex-wrap">
+        <div>
+          <h2 className="text-4xl text-(--adech-title) font-bebas">
+            Branches
+          </h2>
+          <p className="text-sm text-(--adech-paragraph) max-w-lg">
+            Explore Superior through its palettes and copy the tokens directly
+            from each color strip.
+          </p>
         </div>
       </div>
 
-      {/* Palettes */}
-      <div className="flex flex-col gap-6">
-        {PALETTES.map((p) => (
-          <PaletteBlock key={p.name} palette={p} />
+      <div className="flex flex-col gap-8">
+        {palettes.map((palette) => (
+          <PaletteRow key={palette.id} palette={palette} />
         ))}
       </div>
+
+      <p className="text-xs text-(--adech-muted) text-right">
+        Click any color to copy
+      </p>
     </section>
   );
 }
