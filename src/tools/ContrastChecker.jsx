@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import CopyButton from "../components/CopyButton";
+import { IconHelpCircle, IconReplaceFilled } from "@tabler/icons-react";
 
 function hexToRgb(hex) {
   const c = hex.replace("#", "").trim();
@@ -43,183 +45,156 @@ function passLabel(ratio, size = "normal") {
   return { aa, aaa };
 }
 
-function Pill({ ok, children }) {
+function ResultBadge({ label, ok }) {
   return (
-    <span
+    <div
       className={[
-        "rounded-full px-3 py-1 text-xs ring-1",
+        "rounded-lg px-3 py-2 text-center",
         ok
-          ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active) ring-(--adech-nav-bg-active)"
-          : "bg-(--adech-surface) text-(--adech-muted) ring-(--adech-border)",
+          ? "bg-adech-venomous-1 text-adech-swamp-1"
+          : "bg-(--adech-surface) text-(--adech-muted)",
       ].join(" ")}
     >
-      {children}
-    </span>
+      <p className="text-xs opacity-80">{label}</p>
+      <p className="text-sm font-semibold">{ok ? "Pass" : "Fail"}</p>
+    </div>
+  );
+}
+
+function ColorInput({ label, value, onChange }) {
+  return (
+    <label className="block text-xs text-(--adech-paragraph)">
+      {label}
+      <div className="mt-2 flex h-10 items-stretch overflow-hidden rounded-lg bg-(--adech-surface-muted) ring-1 ring-(--adech-border)">
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value.toUpperCase())}
+          className="h-full min-w-0 flex-1 bg-transparent px-3 uppercase text-(--adech-fg) outline-none"
+          placeholder="#F6F8FE"
+        />
+        <CopyButton
+          value={value}
+          title={`Copy ${label.toLowerCase()}`}
+          ariaLabel={`Copy ${label.toLowerCase()}`}
+          className="h-full px-3 text-(--adech-fg)"
+          iconSize={16}
+        />
+        <div className="relative h-full w-14 shrink-0 overflow-hidden rounded-r-lg" style={{ backgroundColor: value }}>
+          <input
+            type="color"
+            value={value}
+            onChange={(event) => onChange(event.target.value.toUpperCase())}
+            className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0 opacity-0"
+            aria-label={`Pick ${label.toLowerCase()} color`}
+          />
+        </div>
+      </div>
+    </label>
   );
 }
 
 export default function ContrastChecker() {
   const [fg, setFg] = useState("#F6F8FE");
-  const [bg, setBg] = useState("#091A2B");
+  const [bg, setBg] = useState("#142039");
   const [size, setSize] = useState("normal");
 
   const ratio = useMemo(() => contrastRatio(fg, bg), [fg, bg]);
   const passes = useMemo(() => passLabel(ratio, size), [ratio, size]);
   const formatted = ratio ? ratio.toFixed(2) : "—";
+  const validState = !ratio ? "Invalid HEX" : passes.aa ? "Readable" : "Low contrast";
 
   const onSwap = () => {
     setFg(bg);
     setBg(fg);
   };
 
-  const copyResult = async () => {
-    const text = `Foreground: ${fg}\nBackground: ${bg}\nContrast: ${formatted}:1\nSize: ${size}`;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Niente
-    }
-  };
-
   return (
-    <div className="">
-      <div className="flex items-start justify-between gap-6 flex-wrap">
-
-        <button
-          onClick={copyResult}
-          className="text-sm text-(--adech-title) transition"
-          type="button"
-        >
-          Copy result
-        </button>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-(--adech-paragraph)">Foreground</label>
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  value={fg}
-                  onChange={(e) => setFg(e.target.value)}
-                  className="h-10 w-full rounded-lg bg-(--adech-surface-strong) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
-                  placeholder="#F6F8FE"
-                />
-                <input
-                  type="color"
-                  value={fg}
-                  onChange={(e) => setFg(e.target.value)}
-                  className="h-10 w-12 rounded-lg bg-(--adech-surface-strong)"
-                  aria-label="Pick foreground color"
-                />
-              </div>
+    <div className="min-h-96 overflow-hidden rounded-lg" style={{ backgroundColor: bg, color: fg }}>
+      <div className="grid min-h-96 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="flex min-h-72 items-center p-6 sm:p-10">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm" style={{ borderColor: `${fg}55`, color: fg }}>
+                {validState}
+              </span>
             </div>
-
-            <div>
-              <label className="text-xs text-(--adech-paragraph)">Background</label>
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  value={bg}
-                  onChange={(e) => setBg(e.target.value)}
-                  className="h-10 w-full rounded-lg bg-(--adech-surface-strong) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
-                  placeholder="#091A2B"
-                />
-                <input
-                  type="color"
-                  value={bg}
-                  onChange={(e) => setBg(e.target.value)}
-                  className="h-10 w-12 rounded-lg bg-(--adech-surface-strong)"
-                  aria-label="Pick background color"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSize("normal")}
-                className={[
-                  "h-9 px-4 rounded-lg text-sm transition",
-                  size === "normal"
-                    ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active) ring-1 ring-(--adech-nav-bg-active)"
-                    : "text-(--adech-paragraph) hover:bg-(--adech-surface-strong) hover:text-(--adech-title)",
-                ].join(" ")}
-              >
-                Normal text
-              </button>
-              <button
-                type="button"
-                onClick={() => setSize("large")}
-                className={[
-                  "h-9 px-4 rounded-lg text-sm transition",
-                  size === "large"
-                    ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active) ring-1 ring-(--adech-nav-bg-active)"
-                    : "text-(--adech-paragraph) hover:bg-(--adech-surface-strong) hover:text-(--adech-title)",
-                ].join(" ")}
-              >
-                Large text
-              </button>
-            </div>
-
-            <button
-              onClick={onSwap}
-              className="h-10 rounded-xl bg-(--adech-surface-strong) px-4 text-sm text-(--adech-title) ring-1 ring-(--adech-border) transition hover:bg-(--adech-surface-muted)"
-              type="button"
-            >
-              Swap
-            </button>
+            <p className="mt-2 text-4xl font-semibold tracking-tight">
+              Contrast {formatted}:1
+            </p>
+            <p className="mt-4 max-w-xl text-base leading-relaxed opacity-90">
+              Muchos años después, frente al pelotón de fusilamiento, el coronel
+              Aureliano Buendía había de recordar aquella tarde remota en que su
+              padre lo llevó a conocer el hielo.
+            </p>
           </div>
         </div>
 
-        <div className="overflow-hidden">
-          <div className="rounded-t-xl p-5" style={{ backgroundColor: bg, color: fg }}>
-            <p className="text-xs opacity-80">Preview</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight">
-              Contrast {formatted}:1
-            </p>
-            <p className="mt-3 text-sm opacity-90 max-w-md">
-              The quick brown fox jumps over the lazy dog. 0123456789
-            </p>
+        <div className="bg-(--adech-bg) p-4 text-(--adech-fg)">
+          <div className="flex h-full flex-col justify-between gap-4">
+            <div className="flex flex-col gap-3">
+              <div className="group relative self-end">
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center text-(--adech-title)"
+                  aria-label="Explain contrast score"
+                >
+                  <IconHelpCircle size={18} stroke={2} />
+                </button>
+                <p className="pointer-events-none absolute right-0 top-[calc(100%+0.5rem)] z-10 w-64 rounded-lg bg-(--adech-surface) p-2 text-left text-xs leading-relaxed text-(--adech-paragraph) opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-within:opacity-100">
+                  The score compares relative luminance. AA needs 4.5:1 for
+                  normal text or 3:1 for large text; AAA needs 7:1 or 4.5:1.
+                </p>
+              </div>
 
-            <div className="mt-5 flex items-center gap-2 flex-wrap">
-              <span
-                className="rounded-full px-3 py-1 text-xs ring-1"
-                style={{
-                  borderColor: `${fg}55`,
-                  backgroundColor: `${fg}12`,
-                  color: fg,
-                }}
-              >
-                FG {fg.toUpperCase()}
-              </span>
-              <span
-                className="rounded-full px-3 py-1 text-xs ring-1"
-                style={{
-                  borderColor: `${fg}55`,
-                  backgroundColor: `${fg}12`,
-                  color: fg,
-                }}
-              >
-                BG {bg.toUpperCase()}
-              </span>
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2">
+                <ColorInput label="Foreground" value={fg} onChange={setFg} />
+                <ColorInput label="Background" value={bg} onChange={setBg} />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSize("normal")}
+                    className={[
+                      "h-9 rounded-lg px-4 text-xs transition",
+                      size === "normal"
+                        ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)"
+                        : "bg-(--adech-surface) text-(--adech-paragraph)",
+                    ].join(" ")}
+                  >
+                    ABC
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSize("large")}
+                    className={[
+                      "h-9 rounded-lg px-4 text-lg transition",
+                      size === "large"
+                        ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)"
+                        : "bg-(--adech-surface) text-(--adech-paragraph)",
+                    ].join(" ")}
+                  >
+                    ABC
+                  </button>
+                </div>
+
+                <button
+                  onClick={onSwap}
+                  className="inline-flex h-10 w-10 items-center justify-center text-(--adech-title) transition"
+                  type="button"
+                  aria-label="Swap foreground and background"
+                  title="Swap foreground and background"
+                >
+                  <IconReplaceFilled stroke={2} />
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-b-xl border-t border-(--adech-border) bg-(--adech-surface-strong) p-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Pill ok={passes.aa}>AA</Pill>
-              <Pill ok={passes.aaa}>AAA</Pill>
-              <span className="text-xs text-(--adech-muted)">
-                ({size === "large" ? "large" : "normal"} text)
-              </span>
+            <div className="grid grid-cols-2 gap-2">
+              <ResultBadge label="AA" ok={passes.aa} />
+              <ResultBadge label="AAA" ok={passes.aaa} />
             </div>
-
-            <span className="text-xs text-(--adech-muted)">
-              {ratio ? "WCAG contrast ratio" : "Invalid HEX"}
-            </span>
           </div>
         </div>
       </div>

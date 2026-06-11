@@ -1,5 +1,5 @@
-import FooterSvg from "./FooterSvg";
 import { useNpmVersion } from "../hooks/useNpmVersion";
+import { AdechIcon, FooterTransition } from "./icons";
 
 const NAV = [
   { label: "Branches", href: "#branches" },
@@ -37,18 +37,13 @@ export default function Footer() {
 
   return (
     <footer className="mt-20 bg-(--adech-footer-bg) text-(--adech-footer-fg)">
-      <img src="/footer.svg" alt="Adech Theme" className="w-full bg-(--adech-bg)" />
-      {/* <FooterSvg /> */}
+      <FooterTransition className="block h-auto w-full bg-(--adech-bg)" title="Adech Theme" />
 
       <div className="mx-auto max-w-6xl p-8 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start gap-12 lg:flex-row lg:justify-between">
           {/* Brand */}
           <div className="flex w-full max-w-md flex-col items-start gap-4 sm:flex-row sm:items-start">
-            <img
-              src="/adech-logo.svg"
-              alt="Adech Theme"
-              className="size-16 shrink-0 sm:size-20"
-            />
+            <AdechIcon className="size-16 shrink-0 text-(--adech-icon-brand) sm:size-20" title="Adech Theme" />
 
             <div className="min-w-0 text-left">
               <p className="text-base font-semibold sm:text-lg">

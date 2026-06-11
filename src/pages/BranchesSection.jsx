@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import superior from "@adech/themes/superior/json";
-import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { IconCheck, IconChevronDown, IconCopy, IconPalette } from "@tabler/icons-react";
 
 const PALETTE_META = {
   boulevard: {
@@ -155,8 +155,9 @@ function Swatch({ token, hex, isFirst, isLast }) {
   );
 }
 
-function PaletteRow({ palette }) {
-  const isRightAligned = palette.id === "venomous" || palette.id === "sunny";
+function PaletteRow({ palette, branchSlug }) {
+  const isRightAligned = palette.name === "venomous" || palette.name === "sunny";
+  const isVenomous = palette.name === "venomous";
 
   return (
     <section className="flex flex-col gap-4">
@@ -167,58 +168,136 @@ function PaletteRow({ palette }) {
         ].join(" ")}
       >
         <h3 className="text-xl font-semibold text-(--adech-title)">
-          {palette.name}
+          {palette.title}
         </h3>
         <p className="max-w-xl text-sm leading-relaxed text-(--adech-paragraph)">
           {palette.description}
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-lg ring-1 ring-(--adech-border)">
-        <div
-          className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr"
-          style={{
-            gridTemplateColumns: `repeat(${palette.colors.length}, minmax(0, 1fr))`,
-          }}
-        >
-          {palette.colors.map((color, index) => (
-            <Swatch
-              key={color.token}
-              token={color.token}
-              hex={color.hex}
-              isFirst={index === 0}
-              isLast={index === palette.colors.length - 1}
-            />
-          ))}
-        </div>
+      <div className={[
+        "overflow-hidden rounded-lg border border-(--adech-border)",
+        isVenomous ? "border-0" : "",
+      ].join(" ")}>
+        {palette.colors.length ? (
+          <div
+            className={[
+              "flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr",
+            ].join(" ")}
+            style={{
+              gridTemplateColumns: `repeat(${palette.colors.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {palette.colors.map((color, index) => (
+              <Swatch
+                key={`${branchSlug}-${palette.name}-${color.token}`}
+                token={color.token}
+                hex={color.hex}
+                isFirst={index === 0}
+                isLast={index === palette.colors.length - 1}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="bg-(--adech-surface) p-4 text-sm text-(--adech-muted)">
+            No color tokens published yet.
+          </p>
+        )}
       </div>
     </section>
   );
 }
 
+function BranchPanel({ branch, open, onToggle }) {
+  return (
+    <article className="overflow-hidden rounded-lg bg-(--adech-surface)">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 p-4 text-left cursor-pointer"
+        aria-expanded={open}
+      >
+        <div className="min-w-0">
+          <h3 className="text-2xl font-bellota font-black text-(--adech-title)">
+            {branch.title}
+          </h3>
+          <p className="max-w-2xl text-sm leading-relaxed text-(--adech-paragraph)">
+            {branch.description}
+          </p>
+        </div>
+
+        <IconChevronDown
+          size={20}
+          stroke={2}
+          className={[
+            "mt-2 shrink-0 text-(--adech-fg) transition-transform duration-200",
+            open ? "rotate-180" : "",
+          ].join(" ")}
+        />
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-8 bg-(--adech-bg) p-4 animate-tabEnter">
+          {branch.subbranches.map((subbranch) => (
+            <PaletteRow
+              key={subbranch.id || subbranch.name}
+              branchSlug={branch.slug}
+              palette={{
+                id: subbranch.id,
+                name: subbranch.name,
+                title:
+                  subbranch.title ||
+                  subbranch.name.charAt(0).toUpperCase() +
+                    subbranch.name.slice(1),
+                description: subbranch.description,
+                colors: subbranch.tokens.map((token) => ({
+                  token: token.name,
+                  hex: token.hex,
+                })),
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </article>
+  );
+}
+
 export default function BranchesSection() {
-  const palettes = useMemo(() => {
+  const fallbackBranches = useMemo(() => {
     const families = superior?.subbranches || {};
 
-    return Object.entries(families).map(([paletteKey, scale]) => {
-      const meta = PALETTE_META[paletteKey] || {
-        name: paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1),
-        description: "Palette from the Superior theme.",
-      };
+    return [
+      {
+        id: "fallback-superior",
+        title: "Superior",
+        slug: "superior",
+        description:
+          "The first Adech branch: tokenized palettes that can move across interfaces, editors, and workspace themes.",
+        status: "published",
+        subbranches: Object.entries(families).map(([paletteKey, scale]) => {
+          const meta = PALETTE_META[paletteKey] || {
+            name: paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1),
+            description: "Palette from the Superior theme.",
+          };
 
-      const colors = Object.entries(scale).map(([step, hex]) => ({
-        token: `adech-${paletteKey}-${step}`,
-        hex,
-      }));
-
-      return {
-        id: paletteKey,
-        name: meta.name,
-        description: meta.description,
-        colors,
-      };
-    });
+          return {
+            id: paletteKey,
+            name: paletteKey,
+            title: meta.name,
+            description: meta.description,
+            tokens: Object.entries(scale).map(([step, hex]) => ({
+              name: `adech-${paletteKey}-${step}`,
+              hex,
+            })),
+          };
+        }),
+      },
+    ];
   }, []);
+
+  const branches = fallbackBranches;
+  const [openBranch, setOpenBranch] = useState(null);
 
   return (
     <section id="branches" className="flex flex-col gap-10 scroll-mt-24">
@@ -228,15 +307,26 @@ export default function BranchesSection() {
             Branches
           </h2>
           <p className="text-sm text-(--adech-paragraph) max-w-lg">
-            Explore Superior through its palettes and copy the tokens directly
-            from each color strip.
+            Explore published Adech branches and copy their color tokens
+            directly from each strip.
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-8">
-        {palettes.map((palette) => (
-          <PaletteRow key={palette.id} palette={palette} />
+      <div className="flex flex-col gap-3">
+        {branches.map((branch) => (
+          <BranchPanel
+            key={branch.id || branch.slug}
+            branch={branch}
+            open={openBranch === (branch.id || branch.slug)}
+            onToggle={() =>
+              setOpenBranch((current) =>
+                current === (branch.id || branch.slug)
+                  ? null
+                  : branch.id || branch.slug
+              )
+            }
+          />
         ))}
       </div>
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ThemeToggleButton from "./ThemeToggleButton";
+import { AdechIcon } from "./icons";
 
 const TABS = [
   { id: "home", label: "Home" },
@@ -92,14 +93,14 @@ export default function Header({ activeTab, onChangeTab }) {
         className="flex min-w-0 items-center gap-2"
         type="button"
       >
-        <img src="/adech-logo.svg" className="w-8 shrink-0" alt="Adech Theme" />
+        <AdechIcon className="w-8 shrink-0 text-(--adech-icon-brand)" title="Adech Theme" />
         <span className="truncate text-2xl">Adech</span>
       </button>
 
       <div className="flex gap-2">
-        <nav className="relative hidden md:flex gap-2 font-bellota bg-(--adech-nav-bg) rounded-xl p-1">
+        <nav className="relative hidden md:flex gap-2 font-bellota bg-(--adech-nav-bg) rounded-lg p-1">
           <span
-            className="pointer-events-none absolute left-0 top-0 rounded-lg bg-(--adech-nav-bg-active) transition-all duration-300 ease-out"
+            className="pointer-events-none absolute left-0 top-0 rounded-md bg-(--adech-nav-bg-active) transition-all duration-300 ease-out"
             style={{
               width: `${sliderStyle.width}px`,
               height: `${sliderStyle.height}px`,
@@ -132,7 +133,7 @@ export default function Header({ activeTab, onChangeTab }) {
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="flex items-center gap-2 rounded-xl transition hover:cursor-pointer p-1 bg-(--adech-nav-bg)"
+          className="flex items-center gap-2 rounded-lg transition hover:cursor-pointer p-1 bg-(--adech-nav-bg)"
           aria-haspopup="menu"
           aria-expanded={open}
         >
@@ -143,7 +144,7 @@ export default function Header({ activeTab, onChangeTab }) {
         <div
           className={[
             "absolute right-0 top-[calc(100%+0.5rem)] z-30",
-            "rounded-xl p-1 shadow-lg",
+            "rounded-lg p-1 shadow-lg",
             "origin-top-right transition-all duration-200 bg-(--adech-nav-bg)",
             open
               ? "visible scale-100 opacity-100 pointer-events-auto"

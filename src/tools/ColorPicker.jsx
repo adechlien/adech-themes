@@ -1,37 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { formatColor, readableText, rgbToHex } from "./colorUtils";
-
-function CopyButton({ value, children }) {
-  const [copied, setCopied] = useState(false);
-
-  const onCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 900);
-    } catch {
-      // noop
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onCopy}
-      className="rounded-lg bg-(--adech-nav-bg-active) px-3 py-2 text-sm font-medium text-(--adech-nav-fg-active)"
-    >
-      {copied ? "Copied" : children}
-    </button>
-  );
-}
+import CopyButton from "../components/CopyButton";
+import { fetchColorName, formatColor, readableText, rgbToHex } from "./colorUtils";
+import { IconColorPicker } from '@tabler/icons-react';
 
 export default function ColorPicker() {
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const [imageUrl, setImageUrl] = useState("");
   const [selected, setSelected] = useState("#A1C4FF");
-  const [hovered, setHovered] = useState(null);
-  const [message, setMessage] = useState("Upload an image or use the screen picker.");
+  const [selectedName, setSelectedName] = useState("");
 
   const canUseEyeDropper =
     typeof window !== "undefined" && typeof window.EyeDropper !== "undefined";
@@ -41,6 +18,14 @@ export default function ColorPicker() {
       if (imageUrl) URL.revokeObjectURL(imageUrl);
     };
   }, [imageUrl]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchColorName(selected, controller.signal).then(setSelectedName);
+
+    return () => controller.abort();
+  }, [selected]);
 
   const drawImage = () => {
     const canvas = canvasRef.current;
@@ -68,10 +53,8 @@ export default function ColorPicker() {
     const pixel = context.getImageData(x, y, 1, 1).data;
     const hex = rgbToHex({ r: pixel[0], g: pixel[1], b: pixel[2] });
 
-    setHovered(hex);
     if (commit) {
       setSelected(hex);
-      setMessage("Color picked from image.");
     }
   };
 
@@ -81,64 +64,39 @@ export default function ColorPicker() {
 
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     setImageUrl(URL.createObjectURL(file));
-    setMessage("Click the image to pick a color.");
   };
 
   const useEyeDropper = async () => {
-    if (!canUseEyeDropper) {
-      setMessage("Screen picker is not available in this browser.");
-      return;
-    }
-
-    try {
-      const dropper = new window.EyeDropper();
-      const result = await dropper.open();
-      setSelected(result.sRGBHex.toUpperCase());
-      setMessage("Color picked from the screen.");
-    } catch {
-      setMessage("Screen pick cancelled.");
-    }
+    const dropper = new window.EyeDropper();
+    const result = await dropper.open();
+    setSelected(result.sRGBHex.toUpperCase());
   };
 
-  const display = hovered || selected;
   const textColor = readableText(selected);
+  const copyButtonStyle = {
+    color: textColor,
+    backgroundColor: `${textColor}18`,
+    boxShadow: `inset 0 0 0 1px ${textColor}30`,
+  };
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="rounded-xl bg-(--adech-surface-strong) p-4 ring-1 ring-(--adech-border)">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="rounded-lg bg-(--adech-surface) px-3 py-2 text-sm font-medium text-(--adech-title) ring-1 ring-(--adech-border) cursor-pointer">
+    <div className="grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-stretch">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={useEyeDropper} className="rounded-lg bg-(--adech-nav-bg-active) p-2 text-sm font-medium text-(--adech-nav-fg-active) disabled:opacity-50" disabled={!canUseEyeDropper}>
+            <IconColorPicker size={18} stroke={2} />
+          </button>
+          <label className="rounded-lg bg-(--adech-nav-bg-active) px-3 py-2 text-sm font-semibold text-(--adech-nav-fg-active) cursor-pointer">
             Upload photo
             <input type="file" accept="image/*" onChange={onFile} className="sr-only" />
           </label>
-
-          <button
-            type="button"
-            onClick={useEyeDropper}
-            className="rounded-lg bg-(--adech-nav-bg-active) px-3 py-2 text-sm font-medium text-(--adech-nav-fg-active) disabled:opacity-50"
-            disabled={!canUseEyeDropper}
-          >
-            Pick from screen
-          </button>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-lg bg-(--adech-surface) ring-1 ring-(--adech-border)">
+        <div className="overflow-hidden rounded-lg bg-(--adech-surface) ring-1 ring-(--adech-border)">
           {imageUrl ? (
             <>
-              <img
-                ref={imageRef}
-                src={imageUrl}
-                alt=""
-                className="hidden"
-                onLoad={drawImage}
-              />
-              <canvas
-                ref={canvasRef}
-                className="block max-h-[520px] w-full cursor-crosshair object-contain"
-                onMouseMove={(event) => pickFromCanvas(event)}
-                onMouseLeave={() => setHovered(null)}
-                onClick={(event) => pickFromCanvas(event, true)}
-              />
+              <img ref={imageRef} src={imageUrl} alt="" className="hidden" onLoad={drawImage} />
+              <canvas ref={canvasRef} className="block max-h-[520px] w-full cursor-crosshair object-contain" onMouseMove={(event) => pickFromCanvas(event)} onClick={(event) => pickFromCanvas(event, true)} />
             </>
           ) : (
             <div className="flex min-h-72 items-center justify-center p-8 text-center text-sm text-(--adech-paragraph)">
@@ -148,38 +106,24 @@ export default function ColorPicker() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div
-          className="min-h-44 rounded-xl p-5 ring-1 ring-(--adech-border)"
-          style={{ backgroundColor: selected, color: textColor }}
-        >
-          <p className="text-xs opacity-80">Selected</p>
-          <p className="mt-8 text-3xl font-semibold">{selected}</p>
-          <p className="mt-1 text-sm opacity-85">{formatColor(selected, "rgb")}</p>
-        </div>
-
-        <div className="rounded-xl bg-(--adech-surface-strong) p-4 ring-1 ring-(--adech-border)">
-          <p className="text-xs text-(--adech-muted)">Current hover</p>
-          <div className="mt-2 flex items-center gap-3">
-            <span
-              className="h-10 w-10 rounded-lg ring-1 ring-(--adech-border)"
-              style={{ backgroundColor: display }}
-            />
-            <div>
-              <p className="text-sm font-semibold text-(--adech-title)">{display}</p>
-              <p className="text-xs text-(--adech-paragraph)">
-                {formatColor(display, "rgb")}
-              </p>
-            </div>
+      <div className="flex h-full flex-col gap-4">
+        <div className="flex h-full min-h-44 flex-col justify-between rounded-lg p-3 lg:min-h-full" style={{ backgroundColor: selected, color: textColor }}>
+          <div>
+            <p className="text-xl font-semibold">{selectedName || selected}</p>
+            <p className="text-base font-semibold">{selected}</p>
+            <p className="text-base font-semibold">{formatColor(selected, "rgb")}</p>
+          </div>
+          <div className="mt-10 flex flex-wrap gap-2">
+            <span className="flex items-center gap-1 rounded-md p-2 text-xs font-semibold" style={copyButtonStyle}>
+              <CopyButton value={selected} iconOnly className="text-current" title="Copy HEX" ariaLabel="Copy HEX" />
+              HEX
+            </span>
+            <span className="flex items-center gap-1 rounded-md p-2 text-xs font-semibold" style={copyButtonStyle}>
+              <CopyButton value={formatColor(selected, "rgb")} iconOnly className="text-current" title="Copy RGB" ariaLabel="Copy RGB" />
+              RGB
+            </span>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <CopyButton value={selected}>Copy HEX</CopyButton>
-          <CopyButton value={formatColor(selected, "rgb")}>Copy RGB</CopyButton>
-        </div>
-
-        <p className="text-sm text-(--adech-paragraph)">{message}</p>
       </div>
     </div>
   );

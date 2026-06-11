@@ -1,78 +1,44 @@
-import { IconBook, IconBrackets, IconBrandTailwind, IconChevronDown, IconCode, IconCopy, IconPackage, IconPalette, IconCheck } from "@tabler/icons-react";
+import { IconBook, IconBrackets, IconBrandTailwind, IconChevronDown, IconCode, IconPackage, IconPalette } from "@tabler/icons-react";
 import { useState } from "react";
+import CopyButton from "../components/CopyButton";
 
-function CopyButton({ text }) {
-  const [copied, setCopied] = useState(false);
-
-  const onCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 900);
-    } catch {
-      // noop
-    }
-  };
+function CodePreview({ title, description, code, codeBlocks, open, onToggle }) {
+  const blocks = codeBlocks || [{ title: "Code", code }];
 
   return (
-    <button
-      onClick={onCopy}
-      className="flex items-center cursor-pointer text-(--adech-nav-fg) transition"
-      type="button"
-      aria-label="Copy code"
-      title="Copy code"
-    >
-      <span
-        key={copied ? "check" : "copy"}
-        className="inline-flex animate-tabEnter"
-      >
-        {copied ? <IconCheck stroke={2} size={20} /> : <IconCopy stroke={2} size={20} />}
-      </span>
-    </button>
-  );
-}
-
-function CodePreview({ title, description, code, icon: Icon, open, onToggle }) {
-  return (
-    <div className="overflow-hidden rounded-lg bg-(--adech-surface) ring-1 ring-(--adech-border)">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-start justify-between gap-4 p-4 text-left"
-        aria-expanded={open}
-      >
+    <div className="overflow-hidden rounded-lg bg-(--adech-surface)">
+      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between gap-4 p-4 text-left cursor-pointer" aria-expanded={open}>
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <div className="text-(--adech-muted)">
-              {Icon ? <Icon size={20} stroke={2} /> : null}
-            </div>
+          <h3 className="text-xl font-bellota font-black text-(--adech-title)">
+            {title}
+          </h3>
 
-            <h3 className="text-xl font-semibold text-(--adech-title)">
-              {title}
-            </h3>
-          </div>
-
-          <p className="text-sm leading-relaxed text-(--adech-paragraph)">
+          <p className="text-xs leading-relaxed text-(--adech-paragraph)">
             {description}
           </p>
         </div>
 
-        <IconChevronDown
-          size={20}
-          stroke={2}
-          className={[
-            "mt-1 shrink-0 text-(--adech-muted) transition-transform duration-200",
-            open ? "rotate-180" : "",
-          ].join(" ")}
-        />
+        <IconChevronDown size={20} stroke={2} className={["mt-1 shrink-0 text-(--adech-fg) transition-transform duration-200", open ? "rotate-180" : "",].join(" ")} />
       </button>
 
       {open && (
-        <div className="flex items-start justify-between gap-4 border-t border-(--adech-border) bg-(--adech-surface-strong) p-4 animate-tabEnter">
-          <pre className="overflow-x-auto text-sm leading-6 text-(--adech-fg)">
-            <code>{code}</code>
-          </pre>
-          <CopyButton text={code} />
+        <div className="flex flex-col gap-3 bg-(--adech-surface-strong) p-4 animate-tabEnter">
+          {blocks.map((block) => (
+            <div
+              key={block.title}
+              className="overflow-hidden rounded-lg bg-(--adech-surface) ring-1 ring-(--adech-border)"
+            >
+              <div className="flex items-center justify-between gap-4 border-b border-(--adech-border) px-4 py-3">
+                <p className="text-xs font-medium text-(--adech-muted)">
+                  {block.title}
+                </p>
+                <CopyButton value={block.code} title="Copy code" ariaLabel="Copy code" />
+              </div>
+              <pre className="overflow-x-auto px-4 py-3 text-sm leading-6 text-(--adech-fg)">
+                <code>{block.code}</code>
+              </pre>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -86,7 +52,12 @@ const DOC_SECTIONS = [
     title: "Install Adech Themes",
     description:
       "Add the package to your project first, then choose how you want to consume the tokens: Tailwind v4, Tailwind v3 preset, CSS variables or JSON exports.",
-    code: `npm i @adech/themes`,
+    codeBlocks: [
+      { title: "npm", code: "npm install @adech/themes" },
+      { title: "pnpm", code: "pnpm add @adech/themes" },
+      { title: "yarn", code: "yarn add @adech/themes" },
+      { title: "bun", code: "bun add @adech/themes" },
+    ],
   },
   {
     id: "tailwind-v4",

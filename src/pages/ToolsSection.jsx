@@ -11,6 +11,7 @@ import ColorWheel from "../tools/ColorWheel";
 import ColorPicker from "../tools/ColorPicker";
 
 function ToolTabs({ tabs, value, onChange }) {
+  const tabsRef = useRef(null);
   const tabRefs = useRef({});
   const [sliderStyle, setSliderStyle] = useState({
     width: 0,
@@ -24,6 +25,11 @@ function ToolTabs({ tabs, value, onChange }) {
     const activeButton = tabRefs.current[value];
     if (!activeButton) return;
 
+    if (!activeButton.offsetWidth || !activeButton.offsetHeight) {
+      setSliderStyle((current) => ({ ...current, opacity: 0 }));
+      return;
+    }
+
     setSliderStyle({
       width: activeButton.offsetWidth,
       height: activeButton.offsetHeight,
@@ -34,20 +40,45 @@ function ToolTabs({ tabs, value, onChange }) {
   }, [value]);
 
   useLayoutEffect(() => {
-    updateSlider();
+    const frame = requestAnimationFrame(updateSlider);
+    return () => cancelAnimationFrame(frame);
   }, [updateSlider]);
 
   useEffect(() => {
-    updateSlider();
-    window.addEventListener("resize", updateSlider);
+    let frame = 0;
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateSlider);
+    };
 
-    return () => window.removeEventListener("resize", updateSlider);
-  }, [updateSlider]);
+    scheduleUpdate();
+    window.addEventListener("resize", scheduleUpdate);
+
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(scheduleUpdate)
+        : null;
+
+    if (observer) {
+      if (tabsRef.current) observer.observe(tabsRef.current);
+      if (tabRefs.current[value]) observer.observe(tabRefs.current[value]);
+    }
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(scheduleUpdate);
+    }
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", scheduleUpdate);
+      observer?.disconnect();
+    };
+  }, [updateSlider, value]);
 
   return (
-    <div className="relative inline-flex flex-wrap gap-1 rounded-xl bg-(--adech-nav-bg) p-1 text-(--adech-nav-fg)">
+    <div ref={tabsRef} className="relative inline-flex flex-wrap gap-1 rounded-lg bg-(--adech-nav-bg) p-1 text-(--adech-nav-fg)">
       <span
-        className="pointer-events-none absolute left-0 top-0 rounded-lg bg-(--adech-nav-bg-active) transition-all duration-300 ease-out"
+        className="pointer-events-none absolute left-0 top-0 rounded-md bg-(--adech-nav-bg-active) transition-all duration-300 ease-out"
         style={{
           width: `${sliderStyle.width}px`,
           height: `${sliderStyle.height}px`,
@@ -65,7 +96,7 @@ function ToolTabs({ tabs, value, onChange }) {
           type="button"
           onClick={() => onChange(tab.id)}
           className={[
-            "relative z-10 rounded-lg px-4 py-1 text-base font-semibold whitespace-nowrap transition",
+            "relative z-10 rounded-lg px-4 py-1 text-base font-semibold whitespace-nowrap transition cursor-pointer",
             value === tab.id ? "text-(--adech-nav-fg-active)" : "text-(--adech-nav-fg)",
           ].join(" ")}
         >
@@ -76,21 +107,14 @@ function ToolTabs({ tabs, value, onChange }) {
   );
 }
 
-function ToolPanel({ title, description, children }) {
+function ToolPanel({ description, children }) {
   return (
-    <div className="rounded-lg bg-(--adech-surface) p-6 ring-1 ring-(--adech-border)">
-      <div className="flex items-start gap-4">
-        <div>
-          <h3 className="text-2xl font-semibold text-(--adech-title)">
-            {title}
-          </h3>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-(--adech-paragraph)">
-            {description}
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-8 rounded-lg bg-(--adech-nav-bg) p-4">
+      <p className="max-w-2xl text-sm leading-relaxed text-(--adech-paragraph)">
+        {description}
+      </p>
 
-      <div className="mt-6">{children}</div>
+      <div className="">{children}</div>
     </div>
   );
 }
@@ -108,53 +132,45 @@ export default function ToolsSection() {
 
   const [tab, setTab] = useState("contrast");
 
-  const activeTool = useMemo(() => {
-    switch (tab) {
-      case "contrast":
-        return {
-          icon: IconTarget,
-          title: "Contrast Checker",
-          description:
-            "Check contrast relationships between colors and validate readability decisions for your interface.",
-          content: <ContrastChecker />,
-        };
+  const tools = useMemo(
+    () => [
+      {
+        id: "contrast",
+        icon: IconTarget,
+        title: "Contrast Checker",
+        description:
+          "Check contrast relationships between colors and validate readability decisions for your interface.",
+        content: <ContrastChecker />,
+      },
+      {
+        id: "guess",
+        icon: IconColorPicker,
+        title: "Color Guess",
+        description:
+          "Guess a hidden color in HEX or RGB and use channel feedback to get closer.",
+        content: <GuessColor />,
+      },
+      {
+        id: "wheel",
+        icon: IconPalette,
+        title: "Color Wheel",
+        description:
+          "Pick a base color and generate analogous, complementary, triadic, tetradic, and monochrome palettes.",
+        content: <ColorWheel />,
+      },
+      {
+        id: "picker",
+        icon: IconPhotoSearch,
+        title: "Color Picker",
+        description:
+          "Sample a color from an uploaded photo or use the browser screen picker when available.",
+        content: <ColorPicker />,
+      },
+    ],
+    []
+  );
 
-      case "guess":
-        return {
-          icon: IconColorPicker,
-          title: "Color Guess",
-          description:
-            "Guess a hidden color in HEX or RGB and use channel feedback to get closer.",
-          content: <GuessColor />,
-        };
-
-      case "wheel":
-        return {
-          icon: IconPalette,
-          title: "Color Wheel",
-          description:
-            "Pick a base color and generate analogous, complementary, triadic, tetradic, and monochrome palettes.",
-          content: <ColorWheel />,
-        };
-
-      case "picker":
-        return {
-          icon: IconPhotoSearch,
-          title: "Color Picker",
-          description:
-            "Sample a color from an uploaded photo or use the browser screen picker when available.",
-          content: <ColorPicker />,
-        };
-
-      default:
-        return {
-          icon: IconTarget,
-          title: "",
-          description: "",
-          content: null,
-        };
-    }
-  }, [tab]);
+  const activeTool = tools.find((tool) => tool.id === tab) || tools[0];
 
   return (
     <section id="tools" className="scroll-mt-24">
@@ -173,12 +189,15 @@ export default function ToolsSection() {
       <div className="mt-6 overflow-x-auto flex flex-col items-start gap-2">
         <ToolTabs tabs={tabs} value={tab} onChange={setTab} />
         <div className="w-full">
-          <ToolPanel
-            icon={activeTool.icon}
-            title={activeTool.title}
-            description={activeTool.description}
-          >
-            {activeTool.content}
+          <ToolPanel icon={activeTool.icon} title={activeTool.title} description={activeTool.description}>
+            {tools.map((tool) => (
+              <div
+                key={tool.id}
+                className={tool.id === tab ? "animate-tabEnter" : "hidden"}
+              >
+                {tool.content}
+              </div>
+            ))}
           </ToolPanel>
         </div>
       </div>

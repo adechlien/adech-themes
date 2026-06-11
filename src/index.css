@@ -12,7 +12,7 @@
   --adech-surface: var(--color-adech-swamp-2);
   --adech-surface-strong: var(--color-adech-swamp-3);
   --adech-surface-muted: var(--color-adech-swamp-1);
-  --adech-border: var(--color-adech-void-3);
+  --adech-border: var(--color-adech-swamp-3);
 
   /* Header */
   --adech-nav-bg: var(--color-adech-swamp-3);
@@ -30,6 +30,14 @@
   --adech-footer-bg: var(--color-adech-swamp-3);
   --adech-footer-fg: var(--color-adech-boulevard-1);
   --adech-footer-paragraph: var(--color-adech-boulevard-3);
+  --adech-icon-brand: var(--color-adech-venomous-1);
+  --adech-icon-brand-accent: var(--color-adech-venomous-3);
+  --adech-icon-workspace: var(--color-adech-venomous-1);
+  --adech-footer-transition-cloud: var(--color-adech-venomous-3);
+  --adech-footer-transition-layer-1: var(--color-adech-boulevard-2);
+  --adech-footer-transition-layer-2: var(--color-adech-boulevard-4);
+  --adech-footer-transition-layer-3: var(--color-adech-swamp-3);
+  --adech-footer-transition-accent: var(--color-adech-venomous-5);
 }
 
 :root[data-theme="light"] {
@@ -42,7 +50,7 @@
   --adech-surface: var(--color-adech-boulevard-1);
   --adech-surface-strong: var(--color-adech-boulevard-2);
   --adech-surface-muted: var(--color-adech-boulevard-4);
-  --adech-border: var(--color-adech-void-1);
+  --adech-border: var(--color-adech-boulevard-3);
 
   /* Header */
   --adech-nav-bg: var(--color-adech-boulevard-1);
@@ -60,6 +68,26 @@
   --adech-footer-bg: var(--color-adech-boulevard-4);
   --adech-footer-fg: var(--color-adech-swamp-1);
   --adech-footer-paragraph: var(--color-adech-swamp-2);
+  --adech-icon-brand: var(--color-adech-swamp-1);
+  --adech-icon-brand-accent: var(--color-adech-void-2);
+  --adech-icon-workspace: var(--color-adech-swamp-2);
+  --adech-footer-transition-cloud: var(--color-adech-venomous-3);
+  --adech-footer-transition-layer-1: var(--color-adech-boulevard-1);
+  --adech-footer-transition-layer-2: var(--color-adech-boulevard-3);
+  --adech-footer-transition-layer-3: var(--color-adech-boulevard-4);
+  --adech-footer-transition-accent: var(--color-adech-venomous-5);
+}
+
+html {
+  background: var(--adech-bg);
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: var(--adech-bg);
+  color: var(--adech-fg);
+  font-family: "Bellota Text", sans-serif;
 }
 
 .font-bebas {

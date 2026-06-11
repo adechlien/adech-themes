@@ -104,7 +104,7 @@ function SwatchCard({ token, hex, isFirst, isLast }) {
       type="button"
       onClick={onCopy}
       className={[
-        "group relative h-28 overflow-hidden text-left transition cursor-pointer",
+        "group relative h-28 overflow-hidden text-left transition cursor-pointer bg-red-200",
         "focus:outline-none focus-visible:z-10",
         isFirst ? "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none" : "",
         isLast ? "rounded-b-lg sm:rounded-r-lg sm:rounded-bl-none sm:border-r-0" : "",
@@ -156,7 +156,7 @@ function SwatchCard({ token, hex, isFirst, isLast }) {
   );
 }
 
-export default function BranchesSection({ onExploreBranches }) {
+export default function BranchesSection() {
   const palettes = useMemo(() => {
     const families = superior?.subbranches || {};
 
@@ -188,25 +188,16 @@ export default function BranchesSection({ onExploreBranches }) {
         <div className="space-y-3">
           <h2 className="font-bebas text-5xl">Superior</h2>
 
-          <p className="text-sm text-(--adech-paragraph) max-w-lg">
-            A quick look at the main branch: tokenized palettes that can move
-            across interfaces, editors, and workspace themes.
+          <p className="text-sm text-(--adech-paragraph) max-w-3xl">
+            Superior is the main theme in Adech Themes. just like any branch in Adech, it is structured as made of smaller subbranches (or palettes), each one grouping related colors with its own visual character.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={onExploreBranches}
-          className="rounded-lg bg-(--adech-hero-bg-button) px-4 py-2 text-sm font-medium text-(--adech-hero-fg-button) cursor-pointer"
-        >
-          Explore branches
-        </button>
       </div>
 
       <div className="mt-10 flex flex-col gap-8">
         {previewPalettes.map((palette) => {
           const isRightAligned = palette.id === "venomous" || palette.id === "sunny";
-          const isSwamp = palette.id === "swamp";
+          const isVenomous = palette.id === "venomous";
 
           return (
             <section key={palette.id} className="flex flex-col gap-4">
@@ -225,8 +216,8 @@ export default function BranchesSection({ onExploreBranches }) {
               </div>
 
               <div className={[
-                "overflow-hidden",
-                isSwamp ? "border border-(--adech-border) rounded-lg" : "",
+                "overflow-hidden border border-(--adech-border) rounded-lg",
+                isVenomous ? "border-0" : "",
               ].join(" ")}>
                 <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr" style={{gridTemplateColumns: `repeat(${palette.colors.length}, minmax(0, 1fr))`,}}>
                   {palette.colors.map((color, index) => (

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { IconCheck, IconCopy, IconHelpCircle } from "@tabler/icons-react";
 import {
   fetchColorName,
   formatColor,
@@ -30,11 +31,12 @@ const HARMONIES = {
   },
   monochrome: {
     label: "Monochrome",
-    lights: [-18, -8, 0, 10, 20],
+    lightStops: [12, 28, 44, 60, 76],
   },
 };
 
-function SlidingTabs({ items, value, onChange }) {
+function SlidingTabs({ items, value, onChange, noWrap = false }) {
+  const tabsRef = useRef(null);
   const tabRefs = useRef({});
   const [sliderStyle, setSliderStyle] = useState({
     width: 0,
@@ -48,6 +50,11 @@ function SlidingTabs({ items, value, onChange }) {
     const activeButton = tabRefs.current[value];
     if (!activeButton) return;
 
+    if (!activeButton.offsetWidth || !activeButton.offsetHeight) {
+      setSliderStyle((current) => ({ ...current, opacity: 0 }));
+      return;
+    }
+
     setSliderStyle({
       width: activeButton.offsetWidth,
       height: activeButton.offsetHeight,
@@ -58,18 +65,49 @@ function SlidingTabs({ items, value, onChange }) {
   }, [value]);
 
   useLayoutEffect(() => {
-    updateSlider();
+    const frame = requestAnimationFrame(updateSlider);
+    return () => cancelAnimationFrame(frame);
   }, [updateSlider]);
 
   useEffect(() => {
-    updateSlider();
-    window.addEventListener("resize", updateSlider);
+    let frame = 0;
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateSlider);
+    };
 
-    return () => window.removeEventListener("resize", updateSlider);
-  }, [updateSlider]);
+    scheduleUpdate();
+    window.addEventListener("resize", scheduleUpdate);
+
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(scheduleUpdate)
+        : null;
+
+    if (observer) {
+      if (tabsRef.current) observer.observe(tabsRef.current);
+      if (tabRefs.current[value]) observer.observe(tabRefs.current[value]);
+    }
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(scheduleUpdate);
+    }
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", scheduleUpdate);
+      observer?.disconnect();
+    };
+  }, [updateSlider, value]);
 
   return (
-    <div className="relative inline-flex flex-wrap gap-1 rounded-xl bg-(--adech-nav-bg) p-1 text-(--adech-nav-fg)">
+    <div
+      ref={tabsRef}
+      className={[
+        "relative inline-flex gap-1 rounded-xl bg-(--adech-nav-bg) text-(--adech-nav-fg)",
+        noWrap ? "flex-nowrap" : "flex-wrap",
+      ].join(" ")}
+    >
       <span
         className="pointer-events-none absolute left-0 top-0 rounded-lg bg-(--adech-nav-bg-active) transition-all duration-300 ease-out"
         style={{
@@ -100,9 +138,24 @@ function SlidingTabs({ items, value, onChange }) {
   );
 }
 
-function PaletteSwatch({ hex, format, isFirst, isLast }) {
+function WheelInfo() {
+  return (
+    <div className="group relative">
+      <button type="button" className="inline-flex h-8 w-8 cursor-pointer items-center justify-center text-(--adech-title)" aria-label="Explain color wheel">
+        <IconHelpCircle size={18} stroke={2} />
+      </button>
+      <p className="pointer-events-none absolute right-0 top-[calc(100%+0.5rem)] z-10 w-72 rounded-lg bg-(--adech-surface) p-3 text-left text-xs leading-relaxed text-(--adech-paragraph) opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-within:opacity-100">
+        The color field adjusts saturation and brightness. The bar below changes
+        hue. Harmony tabs generate related colors from the selected base.
+      </p>
+    </div>
+  );
+}
+
+function PaletteSwatch({ hex, format, isBase, isFirst, isLast }) {
   const [name, setName] = useState(hex);
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState("idle");
+  const timeoutRef = useRef(null);
   const textColor = readableText(hex);
   const value = formatColor(hex, format);
 
@@ -114,15 +167,29 @@ function PaletteSwatch({ hex, format, isFirst, isLast }) {
     return () => controller.abort();
   }, [hex]);
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 900);
+
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+      setCopyState("copied");
+      timeoutRef.current = setTimeout(() => {
+        setCopyState("idle");
+      }, 1200);
     } catch {
       // noop
     }
   };
+
+  const showCopyIcon = copyState === "idle";
+  const showCheckIcon = copyState === "copied";
 
   return (
     <button
@@ -136,25 +203,39 @@ function PaletteSwatch({ hex, format, isFirst, isLast }) {
       ].join(" ")}
       style={{ backgroundColor: hex, color: textColor }}
       title={`Copy ${value}`}
+      aria-label={`Copy ${value}`}
     >
       <div className="absolute inset-0 flex flex-col justify-between p-3">
         <div className="flex items-start justify-between gap-2">
-          <p className="truncate text-xs opacity-80">{value}</p>
-          <p
-            className={[
-              "rounded-full px-2 py-1 text-[11px] font-medium ring-1 transition",
-              copied
-                ? "opacity-100"
-                : "opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
-            ].join(" ")}
-            style={{ borderColor: `${textColor}55`, backgroundColor: `${textColor}12` }}
-          >
-            {copied ? "Copied" : "Copy"}
-          </p>
+          {isBase ? (<span className="text-xs font-black">Base</span>) : (<span />)}
+
+          <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+            <span
+              className={[
+                "absolute inset-0 flex items-center justify-center transition-all duration-300",
+                showCopyIcon
+                  ? "opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0"
+                  : "opacity-0 pointer-events-none",
+              ].join(" ")}
+            >
+              <IconCopy stroke={2} size={16} />
+            </span>
+
+            <span
+              className={[
+                "absolute inset-0 flex items-center justify-center transition-all duration-200",
+                showCheckIcon
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-1 pointer-events-none",
+              ].join(" ")}
+            >
+              <IconCheck stroke={2} size={16} />
+            </span>
+          </span>
         </div>
 
         <div>
-          <p className="text-xs font-medium">{hex}</p>
+          <p className="text-xs font-medium">{value}</p>
           <p className="truncate text-sm font-semibold">{name}</p>
         </div>
       </div>
@@ -185,14 +266,14 @@ function hsvToHex({ h, s, v }) {
 }
 
 export default function ColorWheel() {
-  const wheelRef = useRef(null);
-  const diskRef = useRef(null);
+  const colorAreaRef = useRef(null);
+  const hueBarRef = useRef(null);
   const [hexInput, setHexInput] = useState("#A1C4FF");
   const [rgbInput, setRgbInput] = useState("161, 196, 255");
   const [format, setFormat] = useState("hex");
   const [harmony, setHarmony] = useState("analogous");
-  const [dragging, setDragging] = useState(false);
-  const [pickerPoint, setPickerPoint] = useState({ x: 52, y: 28 });
+  const [dragTarget, setDragTarget] = useState(null);
+  const [selector, setSelector] = useState({ h: 216, s: 0.37, v: 1 });
 
   const baseHex = useMemo(() => {
     if (format === "rgb") {
@@ -207,21 +288,37 @@ export default function ColorWheel() {
   const colors = useMemo(() => {
     const config = HARMONIES[harmony];
 
-    if (config.lights) {
-      return config.lights.map((lightOffset) =>
-        hslToHex({
-          ...baseHsl,
-          l: Math.max(8, Math.min(92, baseHsl.l + lightOffset)),
-        })
-      );
+    if (config.lightStops) {
+      const lightStops = [
+        Math.max(8, baseHsl.l - 28),
+        Math.max(8, baseHsl.l - 14),
+        baseHsl.l,
+        Math.min(92, baseHsl.l + 14),
+        Math.min(92, baseHsl.l + 28),
+      ];
+
+      return [
+        ...new Set(
+          lightStops.map((light) =>
+            hslToHex({
+              ...baseHsl,
+              l: light,
+            })
+          )
+        ),
+      ];
     }
 
-    return config.offsets.map((offset) =>
-      hslToHex({
-        ...baseHsl,
-        h: baseHsl.h + offset,
-      })
-    );
+    return [
+      ...new Set(
+        config.offsets.map((offset) =>
+          hslToHex({
+            ...baseHsl,
+            h: baseHsl.h + offset,
+          })
+        )
+      ),
+    ];
   }, [baseHsl, harmony]);
 
   const setBaseFromHex = (hex) => {
@@ -229,141 +326,72 @@ export default function ColorWheel() {
     setRgbInput(formatColor(hex, "rgb").replace(/[^\d,\s]/g, ""));
   };
 
-  const pickHueFromRing = (event) => {
-    const rect = wheelRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  const syncSelectorFromHex = (hex) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return;
 
-    const x = event.clientX - (rect.left + rect.width / 2);
-    const y = event.clientY - (rect.top + rect.height / 2);
-    const hue = (Math.atan2(y, x) * (180 / Math.PI) + 90 + 360) % 360;
-
-    setBaseFromHex(
-      hslToHex({
-        h: hue,
-        s: baseHsl.s,
-        l: baseHsl.l,
-      })
-    );
+    const hsl = rgbToHsl(rgb);
+    setSelector((current) => ({
+      ...current,
+      h: hsl.h,
+      s: hsl.s / 100,
+      v: Math.min(1, Math.max(0, hsl.l / 85)),
+    }));
   };
 
-  const pickFromDisk = (event) => {
-    const rect = diskRef.current?.getBoundingClientRect();
+  const applySelector = (nextSelector) => {
+    setSelector(nextSelector);
+    setBaseFromHex(hsvToHex(nextSelector));
+  };
+
+  const pickHue = (event) => {
+    const rect = hueBarRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const radius = rect.width / 2;
-    const rawX = event.clientX - cx;
-    const rawY = event.clientY - cy;
-    const distance = Math.sqrt(rawX ** 2 + rawY ** 2);
-    const clampedDistance = Math.min(distance, radius);
-    const angle = Math.atan2(rawY, rawX);
-    const x = Math.cos(angle) * clampedDistance;
-    const y = Math.sin(angle) * clampedDistance;
-    const hue = (angle * (180 / Math.PI) + 360) % 360;
-    const saturation = clampedDistance / radius;
-    const value = Math.max(0.18, Math.min(1, 1 - (y / radius + 1) * 0.34));
-
-    setPickerPoint({
-      x: 50 + (x / radius) * 50,
-      y: 50 + (y / radius) * 50,
+    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+    applySelector({
+      ...selector,
+      h: (x / rect.width) * 360,
     });
-    setBaseFromHex(hsvToHex({ h: hue, s: saturation, v: value }));
+  };
+
+  const pickFromArea = (event) => {
+    const rect = colorAreaRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+    const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+
+    applySelector({
+      ...selector,
+      s: x / rect.width,
+      v: 1 - y / rect.height,
+    });
+  };
+
+  const areaMarkerStyle = {
+    left: `${selector.s * 100}%`,
+    top: `${(1 - selector.v) * 100}%`,
   };
 
   const hueMarkerStyle = {
-    transform: `rotate(${baseHsl.h}deg) translateY(-48%)`,
-  };
-
-  const diskMarkerStyle = {
-    left: `${pickerPoint.x}%`,
-    top: `${pickerPoint.y}%`,
+    left: `${(selector.h / 360) * 100}%`,
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-4">
-          <div
-            ref={wheelRef}
-            className="relative mx-auto aspect-square w-full max-w-80 cursor-crosshair rounded-full bg-[conic-gradient(#F44,#F4D03F,#3DDC84,#46E0D2,#3478F6,#B45CFF,#F44)] p-[10%] ring-1 ring-(--adech-border)"
-            onMouseDown={(event) => {
-              setDragging(true);
-              pickHueFromRing(event);
-            }}
-            onMouseMove={(event) => {
-              if (dragging) pickHueFromRing(event);
-            }}
-            onMouseUp={() => setDragging(false)}
-            onMouseLeave={() => setDragging(false)}
-            onClick={pickHueFromRing}
-          >
-            <div
-              ref={diskRef}
-              className="relative h-full w-full rounded-full bg-[linear-gradient(to_bottom,rgba(255,255,255,0.22),rgba(0,0,0,0.42)),radial-gradient(circle_at_center,rgba(255,255,255,0.78)_0%,rgba(255,255,255,0.12)_32%,rgba(255,255,255,0)_62%),conic-gradient(#F44,#F4D03F,#3DDC84,#46E0D2,#3478F6,#B45CFF,#F44)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)]"
-              onMouseDown={(event) => {
-                event.stopPropagation();
-                setDragging(true);
-                pickFromDisk(event);
-              }}
-              onMouseMove={(event) => {
-                if (dragging) {
-                  event.stopPropagation();
-                  pickFromDisk(event);
-                }
-              }}
-              onMouseUp={(event) => {
-                event.stopPropagation();
-                setDragging(false);
-              }}
-              onClick={(event) => {
-                event.stopPropagation();
-                pickFromDisk(event);
-              }}
-            >
-              <span
-                className="absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-                style={{ ...diskMarkerStyle, backgroundColor: baseHex }}
-              />
-            </div>
-            <div
-              className="pointer-events-none absolute left-1/2 top-1/2 h-1/2 w-1 origin-top"
-              style={hueMarkerStyle}
-            >
-              <span
-                className="absolute -left-2.5 top-0 h-5 w-5 rounded-full ring-2 ring-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-                style={{ backgroundColor: baseHex }}
-              />
-            </div>
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
+      <div className="flex items-start justify-center xl:justify-start">
+        <div className="flex w-full max-w-[440px] flex-col gap-3">
+          <div ref={colorAreaRef} className="relative h-64 cursor-crosshair overflow-hidden rounded-xl ring-1 ring-(--adech-border)" style={{ background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(${selector.h}, 100%, 50%)` }} onMouseDown={(event) => { setDragTarget("area"); pickFromArea(event); }} onMouseMove={(event) => { if (dragTarget === "area") pickFromArea(event); }} onMouseUp={() => setDragTarget(null)} onMouseLeave={() => setDragTarget(null)} onClick={pickFromArea}>
+            <span className="absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]" style={{ ...areaMarkerStyle, backgroundColor: baseHex }}/>
           </div>
-
-          <div className="rounded-xl bg-(--adech-surface-strong) p-4 ring-1 ring-(--adech-border)">
-            <SlidingTabs
-              items={[
-                { id: "hex", label: "HEX" },
-                { id: "rgb", label: "RGB" },
-              ]}
-              value={format}
-              onChange={setFormat}
-            />
-
-            {format === "hex" ? (
-              <input
-                value={hexInput}
-                onChange={(event) => setHexInput(event.target.value.toUpperCase())}
-                className="mt-4 h-10 w-full rounded-lg bg-(--adech-surface) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
-              />
-            ) : (
-              <input
-                value={rgbInput}
-                onChange={(event) => setRgbInput(event.target.value)}
-                className="mt-4 h-10 w-full rounded-lg bg-(--adech-surface) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border)"
-              />
-            )}
+          <div ref={hueBarRef} className="relative h-5 cursor-crosshair rounded-full bg-[linear-gradient(to_right,#F00,#FF0,#0F0,#0FF,#00F,#F0F,#F00)] ring-1 ring-(--adech-border)" onMouseDown={(event) => { setDragTarget("hue"); pickHue(event); }} onMouseMove={(event) => { if (dragTarget === "hue") pickHue(event); }} onMouseUp={() => setDragTarget(null)} onMouseLeave={() => setDragTarget(null)} onClick={pickHue}>
+            <span className="absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]" style={{ ...hueMarkerStyle, backgroundColor: `hsl(${selector.h}, 100%, 50%)` }}/>
           </div>
         </div>
-
-        <div className="flex flex-col gap-4">
+      </div>
+      <div className="flex min-w-0 flex-col gap-2">
+        <div className="min-w-0 overflow-x-auto">
           <SlidingTabs
             items={Object.entries(HARMONIES).map(([id, item]) => ({
               id,
@@ -371,40 +399,62 @@ export default function ColorWheel() {
             }))}
             value={harmony}
             onChange={setHarmony}
+            noWrap
+          />
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <SlidingTabs
+            items={[
+              { id: "hex", label: "HEX" },
+              { id: "rgb", label: "RGB" },
+            ]}
+            value={format}
+            onChange={setFormat}
           />
 
-          <div className="rounded-xl bg-(--adech-surface-strong) p-4 ring-1 ring-(--adech-border)">
-            <p className="text-xs text-(--adech-muted)">Base color</p>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <span
-                className="h-12 w-12 rounded-lg ring-1 ring-(--adech-border)"
-                style={{ backgroundColor: baseHex }}
-              />
-              <div>
-                <p className="text-lg font-semibold text-(--adech-title)">{baseHex}</p>
-                <p className="text-sm text-(--adech-paragraph)">
-                  {formatColor(baseHex, "rgb")}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-lg ring-1 ring-(--adech-border)">
-        <div
-          className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr"
-          style={{ gridTemplateColumns: `repeat(${colors.length}, minmax(0, 1fr))` }}
-        >
-          {colors.map((hex, index) => (
-            <PaletteSwatch
-              key={`${hex}-${index}`}
-              hex={hex}
-              format={format}
-              isFirst={index === 0}
-              isLast={index === colors.length - 1}
+          {format === "hex" ? (
+            <input
+              value={hexInput}
+              onChange={(event) => {
+                const nextValue = event.target.value.toUpperCase();
+                setHexInput(nextValue);
+                syncSelectorFromHex(nextValue);
+              }}
+              className="h-8 w-full rounded-lg bg-(--adech-surface) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border) sm:w-72"
             />
-          ))}
+          ) : (
+            <input
+              value={rgbInput}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                const rgb = parseRgb(nextValue);
+                setRgbInput(nextValue);
+                if (rgb) syncSelectorFromHex(rgbToHex(rgb));
+              }}
+              className="h-8 w-full rounded-lg bg-(--adech-surface) px-3 text-(--adech-fg) outline-none ring-1 ring-(--adech-border) sm:w-72"
+            />
+          )}
+
+          <WheelInfo />
+        </div>
+
+        <div className="overflow-hidden rounded-lg ring-1 ring-(--adech-border)">
+          <div
+            className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr"
+            style={{ gridTemplateColumns: `repeat(${colors.length}, minmax(0, 1fr))` }}
+          >
+            {colors.map((hex, index) => (
+              <PaletteSwatch
+                key={`${hex}-${index}`}
+                hex={hex}
+                format={format}
+                isBase={hex === baseHex}
+                isFirst={index === 0}
+                isLast={index === colors.length - 1}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
