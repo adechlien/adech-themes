@@ -1,75 +1,51 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-
 import Header from "./components/Header";
 import Home from "./pages/Home";
-import BranchesSection from "./pages/BranchesSection";
-import WorkspacesSection from "./pages/WorkspacesSection";
-import DocsSection from "./pages/DocsSection";
+import Themes from "./pages/Themes";
 import ToolsSection from "./pages/ToolsSection";
 import Footer from "./components/Footer";
-import WIP from "./components/WIP";
-
+import AdminBranches from "./pages/AdminBranches";
+import { resolveLocation } from "./lib/navigation";
 import "./index.css";
 
-const TABS = ["home", "branches", "workspaces", "docs", "tools"];
-
-function tabFromHash() {
-  const raw = (window.location.hash || "").replace("#", "").trim();
-  return TABS.includes(raw) ? raw : "home";
-}
-
-function setHash(tab) {
-  if (tab === "home") {
-    window.history.replaceState(
-      null,
-      "",
-      window.location.pathname + window.location.search
-    );
-    return;
-  }
-
-  window.history.replaceState(null, "", `#${tab}`);
-}
-
-export function Root() {
-  const [activeTab, setActiveTab] = useState(() => tabFromHash());
-
+function SiteRoot() {
+  const [route, setRoute] = useState(() => resolveLocation(window.location));
   useEffect(() => {
-    const onHashChange = () => {
-      setActiveTab(tabFromHash());
+    const syncLocation = () => {
+      const next = resolveLocation(window.location);
+      if (next.redirect) window.history.replaceState(null, "", next.redirect);
+      setRoute(next);
     };
-
-    window.addEventListener("hashchange", onHashChange);
-
-    return () => window.removeEventListener("hashchange", onHashChange);
+    syncLocation();
+    window.addEventListener("popstate", syncLocation);
+    window.addEventListener("hashchange", syncLocation);
+    return () => {
+      window.removeEventListener("popstate", syncLocation);
+      window.removeEventListener("hashchange", syncLocation);
+    };
   }, []);
-
   useEffect(() => {
-    setHash(activeTab);
-  }, [activeTab]);
-
+    const label = { home: "Design System", themes: "Themes", tools: "Tools", missing: "Page not found" }[route.area];
+    document.title = `Adech — ${label}`;
+    document.querySelector('link[rel="canonical"]').href = `https://design.adechlien.com${route.path}`;
+  }, [route.area, route.path]);
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <Header activeTab={activeTab} onChangeTab={setActiveTab} />
-        <main className="mx-8 sm:px-16 py-16 sm:py-32">
-          <div key={activeTab} className="flex flex-col gap-32 animate-tabEnter">
-            {activeTab === "home" && <Home activeTab={activeTab} onChangeTab={setActiveTab} />}
-            {activeTab === "docs" && <DocsSection />}
-            {activeTab === "workspaces" && <WorkspacesSection />}
-            {activeTab === "branches" && <BranchesSection />}
-            {activeTab === "tools" && <ToolsSection />}
-          </div>
+        <Header activeTab={route.area} />
+        <main id="main-content" className="mx-8 sm:px-8 py-16 sm:py-32">
+          {route.area === "home" && <Home />}
+          {route.area === "themes" && <Themes section={route.section} />}
+          {route.area === "tools" && <ToolsSection />}
+          {route.area === "missing" && <section className="flex flex-col items-start gap-6"><h1 className="text-4xl">Page not found</h1><a href="/" className="underline">Return to Adech</a></section>}
         </main>
       </div>
       <Footer />
     </div>
   );
 }
-
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <Root />
-  </React.StrictMode>
-);
+export function Root() {
+  return window.location.pathname.replace(/\/+$/, "") === "/admin" ? <AdminBranches /> : <SiteRoot />;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<React.StrictMode><Root /></React.StrictMode>);

@@ -4,13 +4,11 @@ import { AdechIcon } from "./icons";
 
 const TABS = [
   { id: "home", label: "Home" },
-  { id: "docs", label: "Docs" },
-  { id: "workspaces", label: "Workspaces" },
-  { id: "branches", label: "Branches" },
+  { id: "themes", label: "Themes" },
   { id: "tools", label: "Tools" },
 ];
 
-export default function Header({ activeTab, onChangeTab }) {
+export default function Header({ activeTab }) {
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -32,11 +30,6 @@ export default function Header({ activeTab, onChangeTab }) {
     () => TABS.find((tab) => tab.id === activeTab) || TABS[0],
     [activeTab]
   );
-
-  const go = (tab) => {
-    onChangeTab(tab);
-    setOpen(false);
-  };
 
   const updateSlider = useCallback(() => {
     const activeButton = navTabRefs.current[activeTab];
@@ -88,17 +81,16 @@ export default function Header({ activeTab, onChangeTab }) {
 
   return (
     <header className="flex items-center justify-between gap-4 p-4">
-      <button
-        onClick={() => go("home")}
+      <a
+        href="/"
         className="flex min-w-0 items-center gap-2"
-        type="button"
       >
-        <AdechIcon className="w-8 shrink-0 text-(--adech-icon-brand)" title="Adech Theme" />
+        <AdechIcon className="w-8 shrink-0 text-(--adech-icon-brand)" title="Adech Design System" />
         <span className="truncate text-2xl">Adech</span>
-      </button>
+      </a>
 
       <div className="flex gap-2">
-        <nav className="relative hidden md:flex gap-2 font-bellota bg-(--adech-nav-bg) rounded-lg p-1">
+        <nav aria-label="Main" className="relative hidden md:flex gap-2 font-bellota bg-(--adech-nav-bg) rounded-lg p-1">
           <span
             className="pointer-events-none absolute left-0 top-0 rounded-md bg-(--adech-nav-bg-active) transition-all duration-300 ease-out"
             style={{
@@ -113,18 +105,17 @@ export default function Header({ activeTab, onChangeTab }) {
           const isCurrent = activeTab === tab.id;
 
           return (
-            <button
+            <a
               key={tab.id}
               ref={(node) => {
                 if (node) navTabRefs.current[tab.id] = node;
               }}
-              type="button"
-              onClick={() => go(tab.id)}
+              href={tab.id === "home" ? "/" : `/${tab.id}`}
               className={`${linkBase} ${isCurrent ? linkActive : linkIdle}`}
               aria-current={isCurrent ? "page" : undefined}
             >
               {tab.label}
-            </button>
+            </a>
           );
         })}
       </nav>
@@ -134,7 +125,7 @@ export default function Header({ activeTab, onChangeTab }) {
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           className="flex items-center gap-2 rounded-lg transition hover:cursor-pointer p-1 bg-(--adech-nav-bg)"
-          aria-haspopup="menu"
+          aria-controls="mobile-navigation"
           aria-expanded={open}
         >
           <span className="text-base px-4 py-1 rounded-lg font-semibold bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)">
@@ -150,25 +141,23 @@ export default function Header({ activeTab, onChangeTab }) {
               ? "visible scale-100 opacity-100 pointer-events-auto"
               : "invisible scale-95 opacity-0 pointer-events-none",
           ].join(" ")}
-          role="menu"
+          id="mobile-navigation"
         >
-          <nav className="flex flex-col gap-1 font-bellota">
+          <nav aria-label="Main mobile" className="flex flex-col gap-1 font-bellota">
             {TABS.map((tab) => {
               const isCurrent = activeTab === tab.id;
 
               return (
-                <button
+                <a
                   key={tab.id}
-                  type="button"
-                  onClick={() => go(tab.id)}
+                  href={tab.id === "home" ? "/" : `/${tab.id}`}
                   className={`text-base transition px-4 py-1 rounded-lg font-semibold text-right ${
                     isCurrent ? "bg-(--adech-nav-bg-active) text-(--adech-nav-fg-active)" : "text-(--adech-nav-fg) hover:cursor-pointer"
                   }`}
                   aria-current={isCurrent ? "page" : undefined}
-                  role="menuitem"
                 >
                   {tab.label}
-                </button>
+                </a>
               );
             })}
           </nav>

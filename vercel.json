@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/themes", "destination": "/index.html" },
+    { "source": "/themes/", "destination": "/index.html" },
+    { "source": "/tools", "destination": "/index.html" },
+    { "source": "/tools/", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" }
+  ]
+}

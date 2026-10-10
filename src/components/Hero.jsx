@@ -168,7 +168,7 @@ export default function Hero({ activeTab, onChangeTab }) {
         </h1>
 
         <p className="text-sm text-(--adech-hero-paragraph) sm:text-base">
-          Adech is a portable theme ecosystem built around reusable branches for
+          Adech Themes is a portable theme ecosystem built around reusable branches for
           interfaces and workspaces. Install the package, then head into the docs
           when you are ready to wire the tokens into your stack.
         </p>

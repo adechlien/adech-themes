@@ -176,12 +176,12 @@ export default function ToolsSection() {
     <section id="tools" className="scroll-mt-24">
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
-          <h2 className="text-4xl text-(--adech-title) font-bebas">
+          <h1 className="text-4xl text-(--adech-title) font-bebas">
             Tools
-          </h2>
+          </h1>
           <p className="text-sm text-(--adech-paragraph) max-w-lg">
-            A collection of color utilities to explore Adech tokens and validate
-            UI decisions.
+            Design utilities across Adech. Start with color tools to explore
+            palettes and validate your interface decisions.
           </p>
         </div>
       </div>

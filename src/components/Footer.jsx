@@ -2,10 +2,9 @@ import { useNpmVersion } from "../hooks/useNpmVersion";
 import { AdechIcon, FooterTransition } from "./icons";
 
 const NAV = [
-  { label: "Branches", href: "#branches" },
-  { label: "Workspaces", href: "#workspaces" },
-  { label: "Docs", href: "#docs" },
-  { label: "Tools", href: "#tools" },
+  { label: "Home", href: "/" },
+  { label: "Themes", href: "/themes" },
+  { label: "Tools", href: "/tools" },
 ];
 
 const RESOURCES = [
@@ -37,25 +36,22 @@ export default function Footer() {
 
   return (
     <footer className="mt-20 bg-(--adech-footer-bg) text-(--adech-footer-fg)">
-      <FooterTransition className="block h-auto w-full bg-(--adech-bg)" title="Adech Theme" />
+      <FooterTransition className="block h-auto w-full bg-(--adech-bg)" title="Adech Design System" />
 
       <div className="mx-auto max-w-6xl p-8 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start gap-12 lg:flex-row lg:justify-between">
           {/* Brand */}
           <div className="flex w-full max-w-md flex-col items-start gap-4 sm:flex-row sm:items-start">
-            <AdechIcon className="size-16 shrink-0 text-(--adech-icon-brand) sm:size-20" title="Adech Theme" />
+            <AdechIcon className="size-16 shrink-0 text-(--adech-icon-brand) sm:size-20" title="Adech Design System" />
 
             <div className="min-w-0 text-left">
               <p className="text-base font-semibold sm:text-lg">
-                Adech Theme
-                <span className="text-sm font-normal">
-                  {status === "loading" ? "…" : version ? ` v${version}` : " v—"}
-                </span>
+                Adech Design System
               </p>
               <p className="mt-1 text-sm leading-relaxed text-(--adech-footer-paragraph)">
-                A portable theme ecosystem built around reusable branches and design
-                tokens for interfaces and workspaces.
+                An evolving design system for interfaces and workspaces.
               </p>
+              <p className="mt-2 text-xs text-(--adech-footer-paragraph)">Adech Themes {status === "loading" ? "…" : version ? `v${version}` : ""}</p>
             </div>
           </div>
 
