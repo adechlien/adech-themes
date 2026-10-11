@@ -47,11 +47,14 @@ export default function Footer() {
             <div className="min-w-0 text-left">
               <p className="text-base font-semibold sm:text-lg">
                 Adech Design System
+                <span className="text-sm font-normal">
+                  {status === "loading" ? "…" : version ? ` v${version}` : " v—"}
+                </span>
               </p>
               <p className="mt-1 text-sm leading-relaxed text-(--adech-footer-paragraph)">
-                An evolving design system for interfaces and workspaces.
+                A portable theme ecosystem built around reusable branches and design
+                tokens for interfaces and workspaces.
               </p>
-              <p className="mt-2 text-xs text-(--adech-footer-paragraph)">Adech Themes {status === "loading" ? "…" : version ? `v${version}` : ""}</p>
             </div>
           </div>
 

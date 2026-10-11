@@ -1,6 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bellota+Text:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
 @import 'tailwindcss';
 @import "@adech/themes/superior/tailwind";
+@import "@adech/themes/legacy/tailwind";
+
+@theme {
+  --font-bebas: "Bebas Neue", sans-serif;
+  --font-bellota: "Bellota Text", sans-serif;
+}
 
 :root[data-theme="dark"] {
   /* Global */
@@ -25,6 +31,8 @@
   --adech-hero-paragraph: var(--color-adech-boulevard-2);
   --adech-hero-bg-button: var(--color-adech-venomous-1);
   --adech-hero-fg-button: var(--color-adech-swamp-1);
+  --adech-area-available: var(--color-adech-boulevard-1);
+  --adech-area-future: var(--color-adech-void-2);
 
   /* Footer */
   --adech-footer-bg: var(--color-adech-swamp-3);
@@ -63,6 +71,8 @@
   --adech-hero-paragraph: var(--color-adech-void-3);
   --adech-hero-bg-button: var(--color-adech-boulevard-4);
   --adech-hero-fg-button: var(--color-adech-swamp-1);
+  --adech-area-available: var(--color-adech-swamp-1);
+  --adech-area-future: var(--color-adech-void-2);
 
   /* Footer */
   --adech-footer-bg: var(--color-adech-boulevard-4);
@@ -79,23 +89,11 @@
 }
 
 html {
-  background: var(--adech-bg);
+  @apply bg-(--adech-bg);
 }
 
 body {
-  min-width: 320px;
-  margin: 0;
-  background: var(--adech-bg);
-  color: var(--adech-fg);
-  font-family: "Bellota Text", sans-serif;
-}
-
-.font-bebas {
-  font-family: "Bebas Neue", sans-serif;
-}
-
-.font-bellota {
-  font-family: "Bellota Text", sans-serif;
+  @apply min-w-[320px] m-0 bg-(--adech-bg) text-(--adech-fg) font-bellota;
 }
 
 @keyframes tabEnter {

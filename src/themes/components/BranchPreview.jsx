@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import superior from "@adech/themes/superior/json";
+import legacy from "@adech/themes/legacy/json";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
+import AnimatedPanel from "./AnimatedPanel";
+import BranchSelector from "./BranchSelector";
 
 const PALETTE_META = {
   boulevard: {
@@ -23,56 +26,29 @@ const PALETTE_META = {
     name: "Void",
     description: "The indifference, emptiness, and the quiet acceptance of what cannot be changed.",
   },
+  angel: { name: "Angel", description: "Light neutral colors from the Legacy branch." },
+  reverie: { name: "Reverie", description: "Purple tones from the Legacy branch." },
+  nature: { name: "Nature", description: "Green tones from the Legacy branch." },
 };
 
 // ===== Contraste =====
-function getContrastToken(color) {
+function getContrastToken(color, branchName) {
   const r = parseInt(color.substring(1, 3), 16);
   const g = parseInt(color.substring(3, 5), 16);
   const b = parseInt(color.substring(5, 7), 16);
 
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  if (branchName === "Legacy") {
+    return brightness > 128 ? "text-adech-legacy-swamp-1" : "text-adech-legacy-angel-1";
+  }
   return brightness > 128 ? "text-adech-swamp-1" : "text-adech-boulevard-1";
 }
 
-// ===== TheColorAPI cache =====
-const nameCache = new Map();
-
-async function fetchColorName(hex, signal) {
-  const key = hex.toUpperCase();
-  if (nameCache.has(key)) return nameCache.get(key);
-
-  const clean = key.replace("#", "");
-  const url = `https://www.thecolorapi.com/id?hex=${clean}`;
-
-  const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error("Failed to fetch color name");
-
-  const data = await res.json();
-  const value = data?.name?.value || key;
-
-  nameCache.set(key, value);
-  return value;
-}
-
-function SwatchCard({ token, hex, isFirst, isLast }) {
-  const [name, setName] = useState(token);
+function SwatchCard({ token, hex, branchName, isFirst, isLast }) {
   const [copyState, setCopyState] = useState("idle"); // idle | copied
   const timeoutRef = useRef(null);
 
-  const textColorClass = useMemo(() => getContrastToken(hex), [hex]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetchColorName(hex, controller.signal)
-      .then((n) => setName(n))
-      .catch(() => {
-        setName(token);
-      });
-
-    return () => controller.abort();
-  }, [hex, token]);
+  const textColorClass = useMemo(() => getContrastToken(hex, branchName), [hex, branchName]);
 
   useEffect(() => {
     return () => {
@@ -104,7 +80,7 @@ function SwatchCard({ token, hex, isFirst, isLast }) {
       type="button"
       onClick={onCopy}
       className={[
-        "group relative h-28 overflow-hidden text-left transition cursor-pointer bg-red-200",
+        "group relative h-28 overflow-hidden text-left transition cursor-pointer",
         "focus:outline-none focus-visible:z-10",
         isFirst ? "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none" : "",
         isLast ? "rounded-b-lg sm:rounded-r-lg sm:rounded-bl-none sm:border-r-0" : "",
@@ -149,25 +125,24 @@ function SwatchCard({ token, hex, isFirst, isLast }) {
 
         <div className="flex items-end justify-between gap-3">
           <p className={`text-xs font-medium ${textColorClass}`}>{hex.toUpperCase()}</p>
-          <p className={`truncate text-sm font-semibold ${textColorClass}`}>{name}</p>
         </div>
       </div>
     </button>
   );
 }
 
-export default function BranchesSection() {
+function PalettePreview({ theme }) {
   const palettes = useMemo(() => {
-    const families = superior?.subbranches || {};
+    const families = theme.subbranches || {};
 
     return Object.entries(families).map(([paletteKey, scale]) => {
       const meta = PALETTE_META[paletteKey] || {
         name: paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1),
-        description: "Palette from the Superior theme.",
+        description: `Palette from the ${theme.name} theme.`,
       };
 
       const colors = Object.entries(scale).map(([step, hex]) => ({
-        token: `adech-${paletteKey}-${step}`,
+        token: `${theme.prefix}-${paletteKey}-${step}`,
         hex,
       }));
 
@@ -178,26 +153,27 @@ export default function BranchesSection() {
         colors,
       };
     });
-  }, []);
+  }, [theme]);
 
-  const previewPalettes = palettes.slice(0, 3);
+  const previewPalettes = palettes;
 
   return (
-    <section id="branches" className="scroll-mt-24">
+    <div>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div className="space-y-3">
-          <h2 className="font-bebas text-5xl">Superior</h2>
-
           <p className="text-sm text-(--adech-paragraph) max-w-3xl">
-            Superior is the main theme in Adech Themes. just like any branch in Adech, it is structured as made of smaller subbranches (or palettes), each one grouping related colors with its own visual character.
+            {theme.name === "Superior"
+              ? "Superior is the main theme in Adech Themes. just like any branch in Adech, it is structured as made of smaller subbranches (or palettes), each one grouping related colors with its own visual character."
+              : "Legacy preserves the original Adech palettes. Explore its subbranches and copy their tokens below."}
           </p>
         </div>
       </div>
 
       <div className="mt-10 flex flex-col gap-8">
-        {previewPalettes.map((palette) => {
-          const isRightAligned = palette.id === "venomous" || palette.id === "sunny";
+        {previewPalettes.map((palette, paletteIndex) => {
+          const isRightAligned = paletteIndex % 2 === 1;
           const isVenomous = palette.id === "venomous";
+          const wraps = palette.colors.length > 6;
 
           return (
             <section key={palette.id} className="flex flex-col gap-4">
@@ -219,9 +195,9 @@ export default function BranchesSection() {
                 "overflow-hidden border border-(--adech-border) rounded-lg",
                 isVenomous ? "border-0" : "",
               ].join(" ")}>
-                <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr" style={{gridTemplateColumns: `repeat(${palette.colors.length}, minmax(0, 1fr))`,}}>
+                <div className={wraps ? "grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5" : "flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr"} style={wraps ? undefined : {gridTemplateColumns: `repeat(${palette.colors.length}, minmax(0, 1fr))`}}>
                   {palette.colors.map((color, index) => (
-                    <SwatchCard key={color.token} token={color.token} hex={color.hex} isFirst={index === 0} isLast={index === palette.colors.length - 1}/>
+                    <SwatchCard key={color.token} token={color.token} hex={color.hex} branchName={theme.name} isFirst={!wraps && index === 0} isLast={!wraps && index === palette.colors.length - 1}/>
                   ))}
                 </div>
               </div>
@@ -232,6 +208,18 @@ export default function BranchesSection() {
           Click any color to copy
         </p>
 
+      </div>
+    </div>
+  );
+}
+
+export default function BranchPreview() {
+  const [branch, setBranch] = useState("superior");
+  return (
+    <section id="branches" className="scroll-mt-24">
+      <BranchSelector value={branch} onChange={setBranch} />
+      <div className="mt-3">
+        <AnimatedPanel view={branch}>{(displayed) => <PalettePreview theme={displayed === "legacy" ? legacy : superior} />}</AnimatedPanel>
       </div>
     </section>
   );

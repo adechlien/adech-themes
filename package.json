@@ -4,13 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "dev:api": "node --watch server/index.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@adech/themes": "^0.2.0",
+    "@adech/themes": "^0.3.1",
     "@tabler/icons-react": "^3.39.0",
     "@tailwindcss/vite": "^4.2.1",
     "react": "^19.2.0",

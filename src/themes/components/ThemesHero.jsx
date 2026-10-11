@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import CopyButton from "./CopyButton";
+import CopyButton from "../../components/CopyButton";
 
 function CodeBlock({ title, code, tabKey }) {
   return (
@@ -100,7 +100,7 @@ function InstallPreview() {
   }, [updateSlider, tab]);
 
   return (
-    <section id="docs" className="flex w-full min-w-0 flex-col gap-4">
+    <section className="flex w-full min-w-0 flex-col gap-4">
       <div className="flex flex-col gap-2">
         <div className="flex w-full min-w-0 flex-col gap-1">
           <div className="w-full min-w-0">
@@ -149,17 +149,11 @@ function InstallPreview() {
   );
 }
 
-export default function Hero({ activeTab, onChangeTab }) {
-  const goTo = (nextTab) => {
-    if (nextTab !== activeTab) {
-      onChangeTab(nextTab);
-    }
-  };
-
+export default function ThemesHero({ onReadDocs, onExploreBranches }) {
   return (
     <section className="flex min-w-0 flex-col items-start gap-8 sm:grid sm:grid-cols-2 sm:items-start">
-      <div className="mx-auto flex w-full min-w-0 flex-col gap-3 self-start">
-        <p className="text-sm font-medium uppercase tracking-widest text-(--adech-hero-subtitle)">
+      <div className="mx-auto flex w-full min-w-0 flex-col gap-2 self-start">
+        <p className="text-sm font-medium tracking-widest text-(--adech-hero-subtitle)">
           Portable tokens for interfaces
         </p>
 
@@ -168,24 +162,22 @@ export default function Hero({ activeTab, onChangeTab }) {
         </h1>
 
         <p className="text-sm text-(--adech-hero-paragraph) sm:text-base">
-          Adech Themes is a portable theme ecosystem built around reusable branches for
-          interfaces and workspaces. Install the package, then head into the docs
-          when you are ready to wire the tokens into your stack.
+          Adech Themes is a portable theme ecosystem built around reusable branches for interfaces and workspaces. Install the package, then head into the docs when you are ready to wire the tokens into your stack.
         </p>
 
         <div className="flex flex-wrap items-center justify-start gap-3">
-          <button type="button" onClick={() => goTo("docs")} className="rounded-lg bg-(--adech-hero-bg-button) px-4 py-2 text-sm font-medium text-(--adech-hero-fg-button) cursor-pointer">
+          <button type="button" onClick={onReadDocs} className="rounded-lg bg-(--adech-hero-bg-button) px-4 py-2 text-sm font-medium text-(--adech-hero-fg-button) cursor-pointer">
             Read documentation
           </button>
 
-          <button type="button" onClick={() => goTo("branches")} className="text-sm font-medium text-(--adech-hero-subtitle) cursor-pointer">
+          <button type="button" onClick={onExploreBranches} className="text-sm font-medium text-(--adech-hero-subtitle) cursor-pointer">
             Meet the Branches
           </button>
         </div>
       </div>
 
       <div className="w-full min-w-0 self-start">
-        <InstallPreview onReadDocs={() => goTo("docs")} />
+        <InstallPreview />
       </div>
     </section>
   );

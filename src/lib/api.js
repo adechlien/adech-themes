@@ -32,10 +32,10 @@ export function clearAdminToken() {
   localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
 
-export async function loginAdmin(token) {
+export async function loginAdmin(token, username) {
   const data = await request("/api/auth/login", {
     method: "POST",
-    body: { token },
+    body: { token, username },
   });
 
   storeAdminToken(data.token);

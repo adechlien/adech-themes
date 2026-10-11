@@ -1,6 +1,6 @@
 import { IconBook, IconBrackets, IconBrandTailwind, IconChevronDown, IconCode, IconPackage, IconPalette } from "@tabler/icons-react";
 import { useState } from "react";
-import CopyButton from "../components/CopyButton";
+import CopyButton from "../../components/CopyButton";
 
 function CodePreview({ title, description, code, codeBlocks, open, onToggle }) {
   const blocks = codeBlocks || [{ title: "Code", code }];

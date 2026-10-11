@@ -2,12 +2,32 @@
 
 ## Design System site
 
+### Source organization
+
+- `src/pages/Home.jsx` and `src/components/HomeHero.jsx`: general landing.
+- `src/themes/pages/`: Themes page, Workspaces and documentation.
+- `src/themes/components/`: Themes Hero, Branch preview, panel transitions and workspace icons.
+- `src/components/`: shared site components, including `CopyButton` used by Themes and Tools.
+
+Home and Themes have independent Hero components so their content and structure
+can evolve separately without variant flags.
+
 The public site uses `https://design.adechlien.com` with three public routes:
 
 - `/`: Adech Design System overview.
-- `/themes`: Adech Themes, with Branches, Workspaces and theme documentation
-  available through its local navigation (`#branches`, `#workspaces`, `#docs`).
+- `/themes`: a single Adech Themes page with its Hero, Branch selector,
+  Workspaces and documentation displayed together, without tabs.
+
+Branches are selected on the Themes page by clicking the branch title. Superior
+and Legacy contain their approved palettes. Branch changes use the same
+fade out, height adjustment and fade in sequence. The Hero's "Meet the Branches"
+and "Read documentation" actions scroll to their sections without changing the URL.
 - `/tools`: design utilities across Adech, starting with the existing color tools.
+
+Legacy documentation and workspace hash links scroll to their matching sections
+and remove the hash. Branch changes fade out the current content, animate the
+panel height, then fade in the replacement. Reduced motion preferences suppress
+the animation durations.
 
 The previous root hash links redirect to the corresponding area. Vercel rewrites
 in `vercel.json` support direct visits and reloads for the area routes. Other
@@ -36,7 +56,7 @@ The goal of Adech is to make color reusable, portable, and consistent across dif
 
 This repo now includes a small local backend for managing Branches.
 
-- Public Branches are loaded from `GET /api/branches`.
+- The public landing reads static tokens from `@adech/themes`; the local CMS uses `GET /api/branches`.
 - The private manager lives at `/admin`.
 - The SQLite database is created locally at `data/adech.sqlite`.
 - The default development admin token is `adech-local-admin`.
